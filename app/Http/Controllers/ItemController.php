@@ -7,6 +7,7 @@ use App\Http\Requests\Items\UpdateItemRequest;
 use App\Services\FileService;
 use App\Services\ItemService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,13 +18,39 @@ class ItemController extends Controller
         protected FileService $fileService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $items = $this->itemService->getAllItems();
+        $search  = $request->string('search', '')->toString();
+        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'is_active', 'created_at'])
+                        ? $request->string('sort_by')->toString()
+                        : 'created_at';
+        $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
+                        ? $request->string('sort_dir')->toString()
+                        : 'desc';
+        $perPage = min(max($request->integer('per_page', 10), 10), 100);
+        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive'])
+                        ? $request->string('status')->toString()
+                        : 'all';
+
+        $where = [];
+        if ($status === 'active') {
+            $where['is_active'] = true;
+        } elseif ($status === 'inactive') {
+            $where['is_active'] = false;
+        }
+        
+        $paginator = $this->itemService->getPaginatedItems($search, $sortBy, $sortDir, $perPage, $where);
 
         return Inertia::render('items/Master', [
-            'items'     => $items,
+            'items'     => $paginator,
             'pageTitle' => 'Items',
+            'filters'   => [
+                'search'   => $search,
+                'sort_by'  => $sortBy,
+                'sort_dir' => $sortDir,
+                'per_page' => $perPage,
+                'status'   => $status,
+            ],
         ]);
     }
 

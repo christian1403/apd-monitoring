@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { Head, useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { h, ref } from 'vue';
+import type { ColumnDef } from '@tanstack/vue-table';
 import ItemController from '@/actions/App/Http/Controllers/ItemController';
 import { index } from '@/routes/items';
-import InputError from '@/components/InputError.vue';
 import ImagePreview from '@/components/ImagePreview.vue';
+import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import {
     Dialog,
     DialogContent,
@@ -17,22 +18,30 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Card,
+    CardContent,
+} from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-vue-next';
-import { Item } from '@/types/item';
+import { Plus } from 'lucide-vue-next';
+import type { DataTableFilters, PaginatedData } from '@/types/pagination';
+import type { Item, ItemFilters } from '@/types/item';
+import ItemActions from './ItemActions.vue';
+import type { AcceptableValue } from 'reka-ui'
 
 const props = defineProps<{
-    items: Item[];
+    items: PaginatedData<Item>;
     pageTitle: string;
+    filters: ItemFilters;
 }>();
 
 defineOptions({
@@ -125,6 +134,73 @@ function confirmDelete() {
 function onFileChange(form: typeof createForm | typeof editForm, e: Event) {
     form.image = (e.target as HTMLInputElement).files?.[0] ?? null;
 }
+
+// ─── DataTable filter handler ─────────────────────────────────────────────────
+
+function handleFilterChange(updates: Partial<ItemFilters & { page: number }>) {
+    router.get(index(), { ...props.filters, ...updates }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+}
+
+function handleStatusChange(value: AcceptableValue) {
+    handleFilterChange({ status: value as ItemFilters['status'], page: 1 });
+}
+
+// ─── Column definitions ───────────────────────────────────────────────────────
+
+const columns: ColumnDef<Item>[] = [
+    {
+        id: 'image',
+        header: 'Image',
+        cell: ({ row }) =>
+            h(ImagePreview, {
+                src: row.original.image_url,
+                alt: row.original.name,
+                title: row.original.name,
+                description: row.original.description,
+            }),
+    },
+    {
+        accessorKey: 'name',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Name' }),
+        cell: ({ row }) => h('span', { class: 'font-medium' }, row.original.name),
+    },
+    {
+        accessorKey: 'description',
+        header: 'Description',
+        cell: ({ row }) =>
+            h(
+                'span',
+                { class: 'line-clamp-2 max-w-xs text-muted-foreground' },
+                row.original.description ?? '—',
+            ),
+    },
+    {
+        accessorKey: 'is_active',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Status' }),
+        cell: ({ row }) =>
+            h(
+                Badge,
+                { variant: row.original.is_active ? 'default' : 'secondary' },
+                () => (row.original.is_active ? 'Active' : 'Inactive'),
+            ),
+    },
+    {
+        id: 'actions',
+        header: () => h('span', { class: 'sr-only' }, 'Actions'),
+        cell: ({ row }) =>
+            h(ItemActions, {
+                item: row.original,
+                onEdit: (item: Item) => openEdit(item),
+                onDelete: (item: Item) => openDelete(item),
+            }),
+    },
+];
 </script>
 
 <template>
@@ -143,90 +219,43 @@ function onFileChange(form: typeof createForm | typeof editForm, e: Event) {
             </Button>
         </div>
 
-        <!-- Table -->
+        <!-- Filters -->
         <Card>
-            <CardContent class="p-0">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b bg-muted/50 text-left">
-                                <th class="px-4 py-3 font-medium text-muted-foreground">Image</th>
-                                <th class="px-4 py-3 font-medium text-muted-foreground">Name</th>
-                                <th class="px-4 py-3 font-medium text-muted-foreground">Description</th>
-                                <th class="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="props.items.length === 0">
-                                <td
-                                    colspan="5"
-                                    class="px-4 py-12 text-center text-muted-foreground"
-                                >
-                                    No items found. Create one to get started.
-                                </td>
-                            </tr>
-                            <tr
-                                v-for="item in props.items"
-                                :key="item.id"
-                                class="border-b transition-colors last:border-0 hover:bg-muted/30"
-                            >
-                                <!-- Image -->
-                                <td class="px-4 py-3">
-                                    <ImagePreview
-                                        :src="item.image_url"
-                                        :alt="item.name"
-                                        :title="item.name"
-                                        :description="item.description"
-                                    />
-                                </td>
-                                <!-- Name -->
-                                <td class="px-4 py-3 font-medium">{{ item.name }}</td>
-                                <!-- Description -->
-                                <td class="max-w-xs px-4 py-3 text-muted-foreground">
-                                    <span class="line-clamp-2">{{
-                                        item.description ?? '—'
-                                    }}</span>
-                                </td>
-                                <!-- Status -->
-                                <td class="px-4 py-3">
-                                    <Badge :variant="item.is_active ? 'default' : 'secondary'">
-                                        {{ item.is_active ? 'Active' : 'Inactive' }}
-                                    </Badge>
-                                </td>
-                                <!-- Actions -->
-                                <td class="px-4 py-3 text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button variant="ghost" size="icon-sm">
-                                                <MoreHorizontal />
-                                                <span class="sr-only">Row actions</span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem @click="openEdit(item)">
-                                                <Pencil />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                class="text-destructive focus:text-destructive"
-                                                @click="openDelete(item)"
-                                            >
-                                                <Trash2 />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <CardContent>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <Label class="text-sm font-medium">Status</Label>
+                        <Select v-model="filters.status" @update:model-value="handleStatusChange">
+                            <SelectTrigger class="w-36">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </CardContent>
         </Card>
+
+        <!-- DataTable -->
+        <DataTable
+            :columns="columns"
+            :data="items.data"
+            :meta="{
+                current_page: items.current_page,
+                last_page: items.last_page,
+                per_page: items.per_page,
+                total: items.total,
+                from: items.from,
+                to: items.to,
+            }"
+            :filters="filters"
+            search-placeholder="Search items..."
+            @filter-change="handleFilterChange"
+        />
     </div>
 
     <!-- ── Create Dialog ──────────────────────────────────────────────────── -->

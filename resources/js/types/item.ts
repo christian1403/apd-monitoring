@@ -1,3 +1,5 @@
+import type { DataTableFilters } from './pagination';
+
 export type Item = {
     id: number;
     name: string;
@@ -7,4 +9,8 @@ export type Item = {
     is_active: boolean;
     created_at: string;
     updated_at: string;
+};
+
+export type ItemFilters = DataTableFilters & {
+    status: 'all' | 'active' | 'inactive';
 };
