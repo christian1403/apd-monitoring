@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -122,6 +123,35 @@ abstract class BaseRepository
                 return $query->with($with);
             })
             ->get();
+    }
+
+    /**
+     * Get paginated records.
+     *
+     * @param  int  $perPage  Number of records per page (default 10)
+     * @param  array|string|null  $select  Columns to select
+     * @param  array|string|null  $with  Relationships to eager load
+     * @param  string  $pageName  Query string parameter name for the page
+     * @return LengthAwarePaginator<T>
+     */
+    public function paginate(int $perPage = 10, $select = null, $with = null, string $pageName = 'page'): LengthAwarePaginator
+    {
+        return $this->model
+            ->when(! is_null($select), fn ($q) => $q->select($select))
+            ->when($with, fn ($q) => $q->with($with))
+            ->paginate($perPage, ['*'], $pageName)->withQueryString();
+    }
+
+    /**
+     * Get paginated records from an existing query builder.
+     *
+     * @param  int  $perPage
+     * @param  string  $pageName
+     * @return LengthAwarePaginator<T>
+     */
+    public function paginateQuery(Builder $query, int $perPage = 10, string $pageName = 'page'): LengthAwarePaginator
+    {
+        return $query->paginate($perPage, ['*'], $pageName)->withQueryString();
     }
 
     /**
