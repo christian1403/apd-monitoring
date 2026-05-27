@@ -14,17 +14,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // USER ADMIN
-        User::updateOrCreate(
-            ['email' => 'admin@gmail.com'],
-            [
-                'name' => 'Admin APD',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-            ]
-        );
-
         $this->call([
+            RolesSeeder::class,
+            PermissionsSeeder::class,
+            UsersSeeder::class,
             ItemsSeeder::class,
             LocationsSeeder::class,
             CamerasSeeder::class,
