@@ -8,20 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('cameras', function (Blueprint $table) {
-            $table->id();
+        if(!Schema::hasTable('cameras')) {
+            Schema::create('cameras', function (Blueprint $table) {
+                $table->id();
 
-            $table->string('name');
-            $table->string('ip_address')->unique();
-            $table->string('status')->default('active');
+                $table->string('name');
+                $table->string('ip_address')->unique();
+                $table->string('status')->default('active');
+                $table->string('image')->nullable();
 
-            $table->foreignId('location_id')
-                ->constrained('locations')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                $table->foreignId('location_id')
+                    ->constrained('locations')
+                    ->cascadeOnUpdate()
+                    ->cascadeOnDelete();
 
-            $table->timestamps();
-        });
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
