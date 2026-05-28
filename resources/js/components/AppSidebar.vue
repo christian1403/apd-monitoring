@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid, Package } from 'lucide-vue-next';
+import {
+    BookOpen,
+    FolderGit2,
+    LayoutGrid,
+    MapPinned,
+    Package,
+} from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -13,9 +19,11 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarLocation,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as itemsIndex } from '@/routes/items';
+import { index as LocationIndex } from '@/routes/location';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -28,7 +36,12 @@ const mainNavItems: NavItem[] = [
         title: 'Items',
         href: itemsIndex(),
         icon: Package,
-    }
+    },
+    {
+        title: 'Locations',
+        href: LocationIndex(),
+        icon: MapPinned,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -56,6 +69,7 @@ const footerNavItems: NavItem[] = [
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuLocation> </SidebarMenuLocation>
             </SidebarMenu>
         </SidebarHeader>
 
