@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Location\StoreLocationRequest;
 use App\Http\Requests\Location\UpdateLocationRequest;
-use App\Services\FileService;
 use App\Services\LocationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,8 +13,7 @@ use Inertia\Response;
 class LocationController extends Controller
 {
     public function __construct(
-        protected LocationService $locationService,
-        protected FileService $fileService,
+        protected LocationService $locationService
     ) {}
 
     public function index(Request $request): Response
@@ -49,16 +47,16 @@ class LocationController extends Controller
             $request->file('image'),
         );
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('location.created.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Location created.')]);
 
         return to_route('location.index');
     }
 
     public function update(UpdateLocationRequest $request, int $id): RedirectResponse
     {
-         $this->locationService->UpdateLocation($id, $request->safe()->except('image'), $request->file('image'));
+        $this->locationService->updateLocation($id, $request->safe()->except('image'), $request->file('image'));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('location.updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Location updated.')]);
 
         return to_route('location.index');
     }
@@ -67,7 +65,7 @@ class LocationController extends Controller
     {
         $this->locationService->deleteLocation($id);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('location.deleted.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Location deleted.')]);
 
         return to_route('location.index');
     }

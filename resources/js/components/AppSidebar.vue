@@ -19,7 +19,6 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarLocation,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as itemsIndex } from '@/routes/items';
