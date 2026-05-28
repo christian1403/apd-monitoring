@@ -11,3 +11,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/settings.php';
 require __DIR__.'/items.php';
 require __DIR__.'/fileManager.php';
+require __DIR__.'/location.php';
