@@ -2,10 +2,12 @@
 import { Link } from '@inertiajs/vue3';
 import {
     BookOpen,
+    Camera,
     FolderGit2,
     LayoutGrid,
     MapPinned,
     Package,
+    ScanSearch,
 } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -40,6 +42,16 @@ const mainNavItems: NavItem[] = [
         title: 'Locations',
         href: LocationIndex(),
         icon: MapPinned,
+    },
+    {
+        title: 'Cameras',
+        href: '/camera',
+        icon: Camera,
+    },
+    {
+        title: 'Detections',
+        href: '/detection',
+        icon: ScanSearch,
     },
 ];
 
