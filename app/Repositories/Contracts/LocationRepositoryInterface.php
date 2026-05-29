@@ -3,6 +3,7 @@
 namespace App\Repositories\Contracts;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use \Illuminate\Support\Collection;
 
 interface LocationRepositoryInterface
 {
@@ -13,4 +14,11 @@ interface LocationRepositoryInterface
         int $perPage,
         array $where = null
     ): LengthAwarePaginator;
+
+    public function exportData(
+        string $search,
+        string $sortBy,
+        string $sortDir,
+        array $where = null
+    ): Collection;
 }

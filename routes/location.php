@@ -8,4 +8,6 @@ Route::middleware(['auth'])->prefix('location')->group(function () {
     Route::post('/',       [LocationController::class, 'store'])->name('location.store');
     Route::put('/{id}',    [LocationController::class, 'update'])->name('location.update');
     Route::delete('/{id}', [LocationController::class, 'destroy'])->name('location.destroy');
+
+    Route::get('/export/{format?}', [LocationController::class, 'export'])->name('location.export');
 });

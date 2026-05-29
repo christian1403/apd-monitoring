@@ -304,6 +304,8 @@ const columns: ColumnDef<Location>[] = [
                 to: items.to,
             }"
             :filters="props.filters"
+            :export-formats="['xlsx', 'csv']"
+            export-base-url="/location/export"
             search-placeholder="Search locations..."
             @filter-change="handleFilterChange"
         />

@@ -6,6 +6,7 @@ use App\Infrastructure\BaseService;
 use App\Models\Location;
 use App\Repositories\Contracts\LocationRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use \Illuminate\Support\Collection;
 
 class LocationService extends BaseService
 {
@@ -52,6 +53,15 @@ class LocationService extends BaseService
         $existing = $this->locationRepository->findOne($id);
 
         return $this->locationRepository->delete($id);
+    }
+
+    public function getExportData(
+        string $search = '',
+        string $sortBy = 'created_at',
+        string $sortDir = 'desc',
+        array $where = []
+    ): Collection {
+        return $this->locationRepository->exportData($search, $sortBy, $sortDir, $where);
     }
 }
 
