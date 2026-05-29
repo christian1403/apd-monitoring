@@ -73,4 +73,13 @@ class ItemService extends BaseService
 
         return $this->itemRepository->delete($id);
     }
+
+    public function getExportData(
+        string $search = '',
+        string $sortBy = 'created_at',
+        string $sortDir = 'desc',
+        array $where = []
+    ) {
+        return $this->itemRepository->exportData($search, $sortBy, $sortDir, $where);
+    }
 }

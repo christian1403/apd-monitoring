@@ -8,4 +8,6 @@ Route::middleware(['auth'])->prefix('items')->group(function () {
     Route::post('/',       [ItemController::class, 'store'])->name('items.store');
     Route::put('/{id}',    [ItemController::class, 'update'])->name('items.update');
     Route::delete('/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
+
+    Route::get('/export/{format?}', [ItemController::class, 'export'])->name('items.export');
 });

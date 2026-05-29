@@ -3,8 +3,15 @@ import { ref, watch, computed } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import type { ColumnDef, SortingState } from '@tanstack/vue-table';
 import { FlexRender, getCoreRowModel, useVueTable } from '@tanstack/vue-table';
-import { Search } from 'lucide-vue-next';
+import { ChevronDown, Download, FileSpreadsheet, FileText, Search } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Table,
     TableBody,
@@ -23,9 +30,27 @@ const props = withDefaults(
         meta: PaginatedMeta;
         filters: DataTableFilters;
         searchPlaceholder?: string;
+        exportFormats?: ('xlsx' | 'csv')[];
+        exportBaseUrl?: string;
     }>(),
     { searchPlaceholder: 'Search...' },
 );
+
+const exportFormatLabels: Record<'xlsx' | 'csv', { label: string; icon: typeof FileSpreadsheet }> = {
+    xlsx: { label: 'Excel (.xlsx)', icon: FileSpreadsheet },
+    csv:  { label: 'CSV (.csv)',    icon: FileText },
+};
+
+function handleExport(format: 'xlsx' | 'csv') {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(props.filters)) {
+        if (value != null && value !== '' && value !== 'all' && key !== 'per_page') {
+            params.set(key, String(value));
+        }
+    }
+    const qs = params.toString();
+    window.location.href = `${props.exportBaseUrl}/${format}${qs ? '?' + qs : ''}`;
+}
 
 const emit = defineEmits<{
     (e: 'filter-change', value: Partial<DataTableFilters & { page: number }>): void;
@@ -108,6 +133,26 @@ const table = useVueTable({
                 <Input v-model="searchValue" :placeholder="searchPlaceholder" class="pl-9" />
             </div>
             <slot name="toolbar" />
+            <DropdownMenu v-if="exportFormats?.length && exportBaseUrl">
+                <DropdownMenuTrigger as-child>
+                    <Button variant="outline" size="sm" class="ml-auto">
+                        <Download class="size-4" />
+                        Export
+                        <ChevronDown class="size-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                        v-for="format in exportFormats"
+                        :key="format"
+                        class="cursor-pointer"
+                        @click="handleExport(format)"
+                    >
+                        <component :is="exportFormatLabels[format].icon" class="size-4" />
+                        {{ exportFormatLabels[format].label }}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
 
         <!-- Table -->

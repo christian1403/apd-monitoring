@@ -10,6 +10,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Exports\ItemsExport;
 
 class ItemController extends Controller
 {
@@ -86,6 +89,33 @@ class ItemController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Item deleted.')]);
 
         return to_route('items.index');
+    }
+
+    public function export(Request $request, string $format): BinaryFileResponse
+    {
+        $format = in_array($format, ['xlsx', 'csv']) ? $format : 'xlsx';
+
+        $search  = $request->string('search', '')->toString();
+        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'is_active', 'created_at'])
+                        ? $request->string('sort_by')->toString()
+                        : 'created_at';
+        $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
+                        ? $request->string('sort_dir')->toString()
+                        : 'desc';
+        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive'])
+                        ? $request->string('status')->toString()
+                        : 'all';
+
+        $where = [];
+        if ($status === 'active') {
+            $where['is_active'] = true;
+        } elseif ($status === 'inactive') {
+            $where['is_active'] = false;
+        }
+        return Excel::download(
+        new ItemsExport($search, $sortBy, $sortDir, $where),
+            'items.' . $format,
+        );
     }
 }
 

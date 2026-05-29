@@ -253,6 +253,8 @@ const columns: ColumnDef<Item>[] = [
                 to: items.to,
             }"
             :filters="filters"
+            :export-formats="['xlsx', 'csv']"
+            export-base-url="/items/export"
             search-placeholder="Search items..."
             @filter-change="handleFilterChange"
         />
