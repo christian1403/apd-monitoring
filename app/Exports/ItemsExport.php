@@ -35,8 +35,9 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping
 
     public function map($item): array
     {
+        static $counter = 1;
         return [
-            $item->id,
+            $counter++,
             $item->name,
             $item->description,
             $item->is_active ? 'Active' : 'Inactive',
