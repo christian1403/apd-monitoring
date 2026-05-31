@@ -1,297 +1,516 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { h, ref } from 'vue';
+import type { ColumnDef } from '@tanstack/vue-table';
+import DetectionController from '@/actions/App/Http/Controllers/DetectionController';
+import { index } from '@/routes/detection';
+import ImagePreview from '@/components/ImagePreview.vue';
+import InputError from '@/components/InputError.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Plus } from 'lucide-vue-next';
+import type { PaginatedData } from '@/types/pagination';
+import type { Detection, DetectionFilters } from '@/types/detection';
+import type { Item } from '@/types/item';
+import type { Camera } from '@/types/camera';
+import type { Location } from '@/types/location';
 import DetectionActions from './DetectionActions.vue';
+import type { AcceptableValue } from 'reka-ui';
 
 const props = defineProps<{
-    detections: any;
-    items: any[];
-    cameras: any[];
-    locations: any[];
-    filters: {
-        search?: string;
-    };
+    detections: PaginatedData<Detection>;
+    items: Pick<Item, 'id' | 'name'>[];
+    cameras: (Pick<Camera, 'id' | 'name' | 'ip_address'> & { location: Pick<Location, 'id' | 'name'> | null })[];
+    locations: Pick<Location, 'id' | 'name'>[];
+    filters: DetectionFilters;
 }>();
 
-const search = ref(props.filters?.search ?? '');
-const showCreate = ref(false);
+defineOptions({
+    layout: {
+        breadcrumbs: [{ title: 'Detection', href: index() }],
+    },
+});
 
-const form = useForm({
-    item_id: '',
-    camera_id: '',
-    location_id: '',
-    status: 'safe',
+// ─── Dialogs ──────────────────────────────────────────────────────────────────
+
+const showCreateDialog = ref(false);
+const showEditDialog = ref(false);
+const showDeleteDialog = ref(false);
+const targetDetection = ref<Detection | null>(null);
+
+// ─── Create ───────────────────────────────────────────────────────────────────
+
+const createForm = useForm({
+    item_id: '' as number | '',
+    camera_id: '' as number | '',
+    location_id: '' as number | '',
+    status: 'safe' as Detection['status'],
     detected_at: '',
     image: null as File | null,
 });
 
-function doSearch() {
-    router.get('/detection', {
-        search: search.value,
-    }, {
-        preserveState: true,
-        replace: true,
-    });
-}
-
-function setImage(event: Event) {
-    form.image = (event.target as HTMLInputElement).files?.[0] ?? null;
+function openCreate() {
+    createForm.reset();
+    createForm.status = 'safe';
+    showCreateDialog.value = true;
 }
 
 function submitCreate() {
-    form.post('/detection', {
+    createForm.post(DetectionController.store.url(), {
         forceFormData: true,
-        preserveScroll: true,
         onSuccess: () => {
-            showCreate.value = false;
-            form.reset();
-            form.status = 'safe';
+            showCreateDialog.value = false;
+            createForm.reset();
+            createForm.status = 'safe';
         },
     });
 }
 
-function imageUrl(path: string | null) {
-    return path ? `/storage/${path}` : '';
+// ─── Edit ─────────────────────────────────────────────────────────────────────
+
+const editForm = useForm({
+    item_id: '' as number | '',
+    camera_id: '' as number | '',
+    location_id: '' as number | '',
+    status: 'safe' as Detection['status'],
+    detected_at: '',
+    image: null as File | null,
+});
+
+function openEdit(detection: Detection) {
+    targetDetection.value = detection;
+    editForm.item_id = detection.item_id ?? '';
+    editForm.camera_id = detection.camera_id ?? '';
+    editForm.location_id = detection.location_id ?? '';
+    editForm.status = detection.status;
+    editForm.detected_at = detection.detected_at ? detection.detected_at.substring(0, 16) : '';
+    editForm.image = null;
+    showEditDialog.value = true;
 }
+
+function submitEdit() {
+    if (!targetDetection.value) return;
+    editForm.put(DetectionController.update.url(targetDetection.value.id), {
+        forceFormData: true,
+        onSuccess: () => {
+            showEditDialog.value = false;
+        },
+    });
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+const deleting = ref(false);
+
+function openDelete(detection: Detection) {
+    targetDetection.value = detection;
+    showDeleteDialog.value = true;
+}
+
+function confirmDelete() {
+    if (!targetDetection.value) return;
+    deleting.value = true;
+    router.delete(DetectionController.destroy.url(targetDetection.value.id), {
+        onFinish: () => {
+            deleting.value = false;
+            showDeleteDialog.value = false;
+        },
+    });
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function onFileChange(form: typeof createForm | typeof editForm, e: Event) {
+    form.image = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
+
+// ─── DataTable filter handler ─────────────────────────────────────────────────
+
+function handleFilterChange(updates: Partial<DetectionFilters & { page: number }>) {
+    router.get(index(), { ...props.filters, ...updates }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+}
+
+function handleStatusChange(value: AcceptableValue) {
+    handleFilterChange({ status: value as DetectionFilters['status'], page: 1 });
+}
+
+// ─── Status badge variant ─────────────────────────────────────────────────────
+
+const statusVariant: Record<Detection['status'], 'default' | 'secondary' | 'destructive'> = {
+    safe: 'default',
+    warning: 'secondary',
+    unsafe: 'destructive',
+};
+
+// ─── Column definitions ───────────────────────────────────────────────────────
+
+const columns: ColumnDef<Detection>[] = [
+    {
+        id: 'image',
+        header: 'Image',
+        cell: ({ row }) =>
+            h(ImagePreview, {
+                src: row.original.image_url,
+                alt: row.original.item?.name ?? 'detection',
+                title: row.original.item?.name,
+            }),
+    },
+    {
+        id: 'item',
+        header: 'Item',
+        cell: ({ row }) =>
+            h('span', { class: 'font-medium' }, row.original.item?.name ?? '—'),
+    },
+    {
+        id: 'camera',
+        header: 'Camera',
+        cell: ({ row }) =>
+            h('span', { class: 'text-muted-foreground' }, row.original.camera?.name ?? '—'),
+    },
+    {
+        id: 'location',
+        header: 'Location',
+        cell: ({ row }) =>
+            h('span', { class: 'text-muted-foreground' }, row.original.location?.name ?? '—'),
+    },
+    {
+        accessorKey: 'status',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Status' }),
+        cell: ({ row }) =>
+            h(
+                Badge,
+                { variant: statusVariant[row.original.status] },
+                () => row.original.status.charAt(0).toUpperCase() + row.original.status.slice(1),
+            ),
+    },
+    {
+        accessorKey: 'detected_at',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Detected At' }),
+        cell: ({ row }) =>
+            h('span', { class: 'text-sm' }, row.original.detected_at ?? '—'),
+    },
+    {
+        id: 'actions',
+        header: () => h('span', { class: 'sr-only' }, 'Actions'),
+        cell: ({ row }) =>
+            h(DetectionActions, {
+                detection: row.original,
+                onEdit: (d: Detection) => openEdit(d),
+                onDelete: (d: Detection) => openDelete(d),
+            }),
+    },
+];
 </script>
 
 <template>
-    <Head title="Data Detection" />
+    <Head title="Detection" />
 
-    <div class="space-y-6 p-6">
+    <div class="flex h-full flex-1 flex-col gap-6 p-4">
+        <!-- Page header -->
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold">Data Detection</h1>
-                <p class="text-sm text-gray-500">
-                    Kelola hasil deteksi APD berdasarkan item, kamera, dan lokasi.
-                </p>
+                <h1 class="text-2xl font-semibold tracking-tight">Detection</h1>
+                <p class="text-sm text-muted-foreground">Manage APD detection results</p>
             </div>
-
-            <button
-                type="button"
-                class="rounded bg-black px-4 py-2 text-white hover:bg-gray-800"
-                @click="showCreate = true"
-            >
-                Tambah Detection
-            </button>
+            <Button @click="openCreate">
+                <Plus />
+                Add Detection
+            </Button>
         </div>
 
-        <div class="flex gap-2">
-            <input
-                v-model="search"
-                type="text"
-                placeholder="Cari detection..."
-                class="w-full rounded border px-3 py-2"
-                @keyup.enter="doSearch"
-            />
-
-            <button
-                type="button"
-                class="rounded border px-4 py-2 hover:bg-gray-50"
-                @click="doSearch"
-            >
-                Cari
-            </button>
-        </div>
-
-        <div class="overflow-x-auto rounded-xl border bg-white">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left">Image</th>
-                        <th class="px-4 py-3 text-left">Item</th>
-                        <th class="px-4 py-3 text-left">Camera</th>
-                        <th class="px-4 py-3 text-left">Lokasi</th>
-                        <th class="px-4 py-3 text-left">Status</th>
-                        <th class="px-4 py-3 text-left">Waktu</th>
-                        <th class="px-4 py-3 text-right">Aksi</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr
-                        v-for="detection in detections.data"
-                        :key="detection.id"
-                        class="border-t"
-                    >
-                        <td class="px-4 py-3">
-                            <img
-                                v-if="detection.image"
-                                :src="imageUrl(detection.image)"
-                                class="h-12 w-16 rounded object-cover"
-                                alt="detection"
-                            />
-                            <span v-else>-</span>
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ detection.item?.name ?? '-' }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ detection.camera?.name ?? '-' }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ detection.location?.name ?? '-' }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            <span class="rounded bg-gray-100 px-2 py-1 text-xs">
-                                {{ detection.status }}
-                            </span>
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ detection.detected_at ?? '-' }}
-                        </td>
-
-                        <td class="px-4 py-3 text-right">
-                            <DetectionActions
-                                :detection="detection"
-                                :items="items"
-                                :cameras="cameras"
-                                :locations="locations"
-                            />
-                        </td>
-                    </tr>
-
-                    <tr v-if="detections.data.length === 0">
-                        <td colspan="7" class="px-4 py-6 text-center text-gray-500">
-                            Data detection belum tersedia.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div
-            v-if="showCreate"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-        >
-            <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-                <h2 class="mb-4 text-lg font-semibold">Tambah Detection</h2>
-
-                <form class="space-y-4" @submit.prevent="submitCreate">
-                    <div>
-                        <label class="text-sm font-medium">Item APD</label>
-                        <select
-                            v-model="form.item_id"
-                            class="w-full rounded border px-3 py-2"
-                        >
-                            <option value="">Pilih Item</option>
-                            <option
-                                v-for="item in items"
-                                :key="item.id"
-                                :value="item.id"
-                            >
-                                {{ item.name }}
-                            </option>
-                        </select>
-                        <p v-if="form.errors.item_id" class="text-sm text-red-600">
-                            {{ form.errors.item_id }}
-                        </p>
+        <!-- Filters -->
+        <Card>
+            <CardContent>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <Label class="text-sm font-medium">Status</Label>
+                        <Select v-model="filters.status" @update:model-value="handleStatusChange">
+                            <SelectTrigger class="w-36">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="safe">Safe</SelectItem>
+                                <SelectItem value="warning">Warning</SelectItem>
+                                <SelectItem value="unsafe">Unsafe</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
+                </div>
+            </CardContent>
+        </Card>
 
-                    <div>
-                        <label class="text-sm font-medium">Camera</label>
-                        <select
-                            v-model="form.camera_id"
-                            class="w-full rounded border px-3 py-2"
-                        >
-                            <option value="">Pilih Camera</option>
-                            <option
-                                v-for="camera in cameras"
-                                :key="camera.id"
-                                :value="camera.id"
-                            >
-                                {{ camera.name }} - {{ camera.ip_address }}
-                            </option>
-                        </select>
-                        <p v-if="form.errors.camera_id" class="text-sm text-red-600">
-                            {{ form.errors.camera_id }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">Lokasi</label>
-                        <select
-                            v-model="form.location_id"
-                            class="w-full rounded border px-3 py-2"
-                        >
-                            <option value="">Otomatis dari Camera</option>
-                            <option
-                                v-for="location in locations"
-                                :key="location.id"
-                                :value="location.id"
-                            >
-                                {{ location.name }}
-                            </option>
-                        </select>
-                        <p v-if="form.errors.location_id" class="text-sm text-red-600">
-                            {{ form.errors.location_id }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">Status</label>
-                        <select
-                            v-model="form.status"
-                            class="w-full rounded border px-3 py-2"
-                        >
-                            <option value="safe">Safe</option>
-                            <option value="warning">Warning</option>
-                            <option value="unsafe">Unsafe</option>
-                        </select>
-                        <p v-if="form.errors.status" class="text-sm text-red-600">
-                            {{ form.errors.status }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">Waktu Deteksi</label>
-                        <input
-                            v-model="form.detected_at"
-                            type="datetime-local"
-                            class="w-full rounded border px-3 py-2"
-                        />
-                        <p v-if="form.errors.detected_at" class="text-sm text-red-600">
-                            {{ form.errors.detected_at }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">Image</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            class="w-full rounded border px-3 py-2"
-                            @change="setImage"
-                        />
-                        <p v-if="form.errors.image" class="text-sm text-red-600">
-                            {{ form.errors.image }}
-                        </p>
-                    </div>
-
-                    <div class="flex justify-end gap-2">
-                        <button
-                            type="button"
-                            class="rounded border px-4 py-2"
-                            @click="showCreate = false"
-                        >
-                            Batal
-                        </button>
-
-                        <button
-                            type="submit"
-                            class="rounded bg-black px-4 py-2 text-white"
-                            :disabled="form.processing"
-                        >
-                            Simpan
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <!-- DataTable -->
+        <DataTable
+            :columns="columns"
+            :data="detections.data"
+            :meta="{
+                current_page: detections.current_page,
+                last_page: detections.last_page,
+                per_page: detections.per_page,
+                total: detections.total,
+                from: detections.from,
+                to: detections.to,
+            }"
+            :filters="filters"
+            search-placeholder="Search detections..."
+            @filter-change="handleFilterChange"
+        />
     </div>
+
+    <!-- ── Create Dialog ──────────────────────────────────────────────────── -->
+    <Dialog v-model:open="showCreateDialog">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Add Detection</DialogTitle>
+                <DialogDescription>Fill in the details to record a new detection.</DialogDescription>
+            </DialogHeader>
+
+            <form class="space-y-4" @submit.prevent="submitCreate">
+                <div class="grid gap-1.5">
+                    <Label for="c-item">Item APD <span class="text-destructive">*</span></Label>
+                    <Select v-model="createForm.item_id">
+                        <SelectTrigger id="c-item" class="w-full">
+                            <SelectValue placeholder="Select item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="item in items" :key="item.id" :value="item.id">
+                                {{ item.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="createForm.errors.item_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-camera">Camera <span class="text-destructive">*</span></Label>
+                    <Select v-model="createForm.camera_id">
+                        <SelectTrigger id="c-camera" class="w-full">
+                            <SelectValue placeholder="Select camera" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="camera in cameras" :key="camera.id" :value="camera.id">
+                                {{ camera.name }} — {{ camera.ip_address }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="createForm.errors.camera_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-location">Location</Label>
+                    <Select v-model="createForm.location_id">
+                        <SelectTrigger id="c-location" class="w-full">
+                            <SelectValue placeholder="Auto from camera" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="location in locations" :key="location.id" :value="location.id">
+                                {{ location.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="createForm.errors.location_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-status">Status <span class="text-destructive">*</span></Label>
+                    <Select v-model="createForm.status">
+                        <SelectTrigger id="c-status" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="safe">Safe</SelectItem>
+                            <SelectItem value="warning">Warning</SelectItem>
+                            <SelectItem value="unsafe">Unsafe</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="createForm.errors.status" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-detected-at">Detected At</Label>
+                    <Input id="c-detected-at" v-model="createForm.detected_at" type="datetime-local" />
+                    <InputError :message="createForm.errors.detected_at" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-image">Image</Label>
+                    <Input
+                        id="c-image"
+                        type="file"
+                        accept="image/jpg,image/jpeg,image/png,image/webp"
+                        @change="onFileChange(createForm, $event)"
+                    />
+                    <InputError :message="createForm.errors.image" />
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" @click="showCreateDialog = false">
+                        Cancel
+                    </Button>
+                    <Button type="submit" :disabled="createForm.processing">
+                        <Spinner v-if="createForm.processing" class="size-4" />
+                        Save
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+
+    <!-- ── Edit Dialog ────────────────────────────────────────────────────── -->
+    <Dialog v-model:open="showEditDialog">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Edit Detection</DialogTitle>
+                <DialogDescription>
+                    Updating detection for
+                    <strong>{{ targetDetection?.item?.name }}</strong>.
+                </DialogDescription>
+            </DialogHeader>
+
+            <form class="space-y-4" @submit.prevent="submitEdit">
+                <div class="grid gap-1.5">
+                    <Label for="e-item">Item APD <span class="text-destructive">*</span></Label>
+                    <Select v-model="editForm.item_id">
+                        <SelectTrigger id="e-item" class="w-full">
+                            <SelectValue placeholder="Select item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="item in items" :key="item.id" :value="item.id">
+                                {{ item.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="editForm.errors.item_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-camera">Camera <span class="text-destructive">*</span></Label>
+                    <Select v-model="editForm.camera_id">
+                        <SelectTrigger id="e-camera" class="w-full">
+                            <SelectValue placeholder="Select camera" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="camera in cameras" :key="camera.id" :value="camera.id">
+                                {{ camera.name }} — {{ camera.ip_address }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="editForm.errors.camera_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-location">Location</Label>
+                    <Select v-model="editForm.location_id">
+                        <SelectTrigger id="e-location" class="w-full">
+                            <SelectValue placeholder="Auto from camera" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="location in locations" :key="location.id" :value="location.id">
+                                {{ location.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="editForm.errors.location_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-status">Status <span class="text-destructive">*</span></Label>
+                    <Select v-model="editForm.status">
+                        <SelectTrigger id="e-status" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="safe">Safe</SelectItem>
+                            <SelectItem value="warning">Warning</SelectItem>
+                            <SelectItem value="unsafe">Unsafe</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="editForm.errors.status" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-detected-at">Detected At</Label>
+                    <Input id="e-detected-at" v-model="editForm.detected_at" type="datetime-local" />
+                    <InputError :message="editForm.errors.detected_at" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-image">Image</Label>
+                    <ImagePreview
+                        v-if="targetDetection?.image_url"
+                        :src="targetDetection.image_url"
+                        :alt="targetDetection.item?.name ?? 'detection'"
+                        :title="targetDetection.item?.name"
+                    />
+                    <p v-if="targetDetection?.image" class="text-xs text-muted-foreground">
+                        A new upload will replace the existing image.
+                    </p>
+                    <Input
+                        id="e-image"
+                        type="file"
+                        accept="image/jpg,image/jpeg,image/png,image/webp"
+                        @change="onFileChange(editForm, $event)"
+                    />
+                    <InputError :message="editForm.errors.image" />
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" @click="showEditDialog = false">
+                        Cancel
+                    </Button>
+                    <Button type="submit" :disabled="editForm.processing">
+                        <Spinner v-if="editForm.processing" class="size-4" />
+                        Update
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+
+    <!-- ── Delete Confirmation Dialog ────────────────────────────────────── -->
+    <Dialog v-model:open="showDeleteDialog">
+        <DialogContent class="sm:max-w-sm">
+            <DialogHeader>
+                <DialogTitle>Delete Detection</DialogTitle>
+                <DialogDescription>
+                    Are you sure you want to delete this detection record? This action cannot be undone.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
+                <Button variant="destructive" :disabled="deleting" @click="confirmDelete">
+                    <Spinner v-if="deleting" class="size-4" />
+                    Delete
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>
+

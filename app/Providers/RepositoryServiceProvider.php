@@ -9,6 +9,8 @@ use App\Repositories\Contracts\LocationRepositoryInterface;
 use App\Repositories\LocationRepository;
 use App\Repositories\Contracts\CameraRepositoryInterface;
 use App\Repositories\CameraRepository;
+use App\Repositories\Contracts\DetectionRepositoryInterface;
+use App\Repositories\DetectionRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,11 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             CameraRepositoryInterface::class,
             CameraRepository::class
+        );
+
+        $this->app->bind(
+            DetectionRepositoryInterface::class,
+            DetectionRepository::class
         );
     }
 }

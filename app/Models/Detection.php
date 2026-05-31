@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use App\Services\FileService;
 class Detection extends Model
 {
     protected $table = 'detections';
@@ -17,6 +17,15 @@ class Detection extends Model
         'image',
         'detected_at',
     ];
+
+    protected $appends = ['image_url'];
+    public function getImageUrlAttribute(): ?string
+    {
+        if ($this->image) {
+            return app(FileService::class)->getUrl($this->image);
+        }
+        return null;
+    }
 
     public function item(): BelongsTo
     {
