@@ -2,89 +2,80 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Cameras\StoreCameraRequest;
+use App\Http\Requests\Cameras\UpdateCameraRequest;
 use App\Models\Camera;
 use App\Models\Location;
+use App\Services\CameraService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class CameraController extends Controller
 {
-    public function index(Request $request)
-    {
-        $search = $request->input('search');
+    public function __construct(
+        protected CameraService $cameraService,
+    ) {}
 
-        $cameras = Camera::with('location')
-            ->when($search, function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('ip_address', 'like', "%{$search}%")
-                    ->orWhere('status', 'like', "%{$search}%")
-                    ->orWhereHas('location', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    });
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+    public function index(Request $request): Response
+    {
+        $search  = $request->string('search', '')->toString();
+        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'ip_address', 'status', 'created_at'])
+                        ? $request->string('sort_by')->toString()
+                        : 'created_at';
+        $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
+                        ? $request->string('sort_dir')->toString()
+                        : 'desc';
+        $perPage = min(max($request->integer('per_page', 10), 10), 100);
+        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive', 'maintenance'])
+                        ? $request->string('status')->toString()
+                        : 'all';
+
+        $where = [];
+        if ($status !== 'all') {
+            $where['status'] = $status;
+        }
+
+        $cameras = $this->cameraService->getPaginatedCameras($search, $sortBy, $sortDir, $perPage, $where);
 
         return Inertia::render('camera/Master', [
-            'cameras' => $cameras,
+            'cameras'   => $cameras,
             'locations' => Location::orderBy('name')->get(),
-            'filters' => [
-                'search' => $search,
+            'filters'   => [
+                'search'   => $search,
+                'sort_by'  => $sortBy,
+                'sort_dir' => $sortDir,
+                'per_page' => $perPage,
+                'status'   => $status,
             ],
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCameraRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'ip_address' => ['required', 'string', 'max:255', 'unique:cameras,ip_address'],
-            'status' => ['required', 'string', 'in:active,inactive,maintenance'],
-            'location_id' => ['required', 'exists:locations,id'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        ]);
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('cameras', 'public');
-        }
-
-        Camera::create($validated);
+        $this->cameraService->createCamera(
+            $request->safe()->except('image'),
+            $request->file('image'),
+        );
 
         return redirect()->route('camera.index');
     }
 
-    public function update(Request $request, Camera $camera)
+    public function update(UpdateCameraRequest $request, Camera $camera): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'ip_address' => ['required', 'string', 'max:255', 'unique:cameras,ip_address,' . $camera->id],
-            'status' => ['required', 'string', 'in:active,inactive,maintenance'],
-            'location_id' => ['required', 'exists:locations,id'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        ]);
-
-        if ($request->hasFile('image')) {
-            if ($camera->image) {
-                Storage::disk('public')->delete($camera->image);
-            }
-
-            $validated['image'] = $request->file('image')->store('cameras', 'public');
-        }
-
-        $camera->update($validated);
+        $this->cameraService->updateCamera(
+            $camera->id,
+            $request->safe()->except('image'),
+            $request->file('image'),
+        );
 
         return redirect()->route('camera.index');
     }
 
-    public function destroy(Camera $camera)
+    public function destroy(Camera $camera): RedirectResponse
     {
-        if ($camera->image) {
-            Storage::disk('public')->delete($camera->image);
-        }
-
-        $camera->delete();
+        $this->cameraService->deleteCamera($camera->id);
 
         return redirect()->route('camera.index');
     }

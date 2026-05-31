@@ -1,7 +1,465 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { h, ref } from 'vue';
+import type { ColumnDef } from '@tanstack/vue-table';
+import CameraController from '@/actions/App/Http/Controllers/CameraController';
+import { index } from '@/routes/camera';
+import ImagePreview from '@/components/ImagePreview.vue';
+import InputError from '@/components/InputError.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Plus } from 'lucide-vue-next';
+import type { PaginatedData } from '@/types/pagination';
+import type { Camera, CameraFilters } from '@/types/camera';
 import CameraActions from './CameraActions.vue';
+import type { AcceptableValue } from 'reka-ui';
+import type { Location } from '@/types/location';
+
+const props = defineProps<{
+    cameras: PaginatedData<Camera>;
+    locations: Location[];
+    filters: CameraFilters;
+}>();
+
+defineOptions({
+    layout: {
+        breadcrumbs: [{ title: 'Camera', href: index() }],
+    },
+});
+
+// ─── Dialogs ──────────────────────────────────────────────────────────────────
+
+const showCreateDialog = ref(false);
+const showEditDialog = ref(false);
+const showDeleteDialog = ref(false);
+const targetCamera = ref<Camera | null>(null);
+
+// ─── Create ───────────────────────────────────────────────────────────────────
+
+const createForm = useForm({
+    name: '',
+    ip_address: '',
+    status: 'active' as Camera['status'],
+    location_id: '' as number | '',
+    image: null as File | null,
+});
+
+function openCreate() {
+    createForm.reset();
+    createForm.status = 'active';
+    showCreateDialog.value = true;
+}
+
+function submitCreate() {
+    createForm.post(CameraController.store.url(), {
+        forceFormData: true,
+        onSuccess: () => {
+            showCreateDialog.value = false;
+            createForm.reset();
+            createForm.status = 'active';
+        },
+    });
+}
+
+// ─── Edit ─────────────────────────────────────────────────────────────────────
+
+const editForm = useForm({
+    name: '',
+    ip_address: '',
+    status: 'active' as Camera['status'],
+    location_id: '' as number | '',
+    image: null as File | null,
+});
+
+function openEdit(camera: Camera) {
+    targetCamera.value = camera;
+    editForm.name = camera.name;
+    editForm.ip_address = camera.ip_address;
+    editForm.status = camera.status;
+    editForm.location_id = camera.location_id ?? '';
+    editForm.image = null;
+    showEditDialog.value = true;
+}
+
+function submitEdit() {
+    if (!targetCamera.value) return;
+    editForm.put(CameraController.update.url(targetCamera.value.id), {
+        forceFormData: true,
+        onSuccess: () => {
+            showEditDialog.value = false;
+        },
+    });
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+const deleting = ref(false);
+
+function openDelete(camera: Camera) {
+    targetCamera.value = camera;
+    showDeleteDialog.value = true;
+}
+
+function confirmDelete() {
+    if (!targetCamera.value) return;
+    deleting.value = true;
+    router.delete(CameraController.destroy.url(targetCamera.value.id), {
+        onFinish: () => {
+            deleting.value = false;
+            showDeleteDialog.value = false;
+        },
+    });
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function onFileChange(form: typeof createForm | typeof editForm, e: Event) {
+    form.image = (e.target as HTMLInputElement).files?.[0] ?? null;
+}
+
+// ─── DataTable filter handler ─────────────────────────────────────────────────
+
+function handleFilterChange(updates: Partial<CameraFilters & { page: number }>) {
+    router.get(index(), { ...props.filters, ...updates }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+}
+
+function handleStatusChange(value: AcceptableValue) {
+    handleFilterChange({ status: value as CameraFilters['status'], page: 1 });
+}
+
+// ─── Status badge variant ─────────────────────────────────────────────────────
+
+const statusVariant: Record<Camera['status'], 'default' | 'secondary' | 'outline'> = {
+    active: 'default',
+    inactive: 'secondary',
+    maintenance: 'outline',
+};
+
+// ─── Column definitions ───────────────────────────────────────────────────────
+
+const columns: ColumnDef<Camera>[] = [
+    {
+        id: 'image',
+        header: 'Image',
+        cell: ({ row }) =>
+            h(ImagePreview, {
+                src: row.original.image_url,
+                alt: row.original.name,
+                title: row.original.name,
+            }),
+    },
+    {
+        accessorKey: 'name',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Name' }),
+        cell: ({ row }) => h('span', { class: 'font-medium' }, row.original.name),
+    },
+    {
+        accessorKey: 'ip_address',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'IP Address' }),
+        cell: ({ row }) => h('span', { class: 'font-mono text-sm' }, row.original.ip_address),
+    },
+    {
+        id: 'location',
+        header: 'Location',
+        cell: ({ row }) =>
+            h('span', { class: 'text-muted-foreground' }, row.original.location?.name ?? '—'),
+    },
+    {
+        accessorKey: 'status',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Status' }),
+        cell: ({ row }) =>
+            h(
+                Badge,
+                { variant: statusVariant[row.original.status] },
+                () => row.original.status.charAt(0).toUpperCase() + row.original.status.slice(1),
+            ),
+    },
+    {
+        id: 'actions',
+        header: () => h('span', { class: 'sr-only' }, 'Actions'),
+        cell: ({ row }) =>
+            h(CameraActions, {
+                camera: row.original,
+                onEdit: (camera: Camera) => openEdit(camera),
+                onDelete: (camera: Camera) => openDelete(camera),
+            }),
+    },
+];
+</script>
+
+<template>
+    <Head title="Camera" />
+
+    <div class="flex h-full flex-1 flex-col gap-6 p-4">
+        <!-- Page header -->
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold tracking-tight">Camera</h1>
+                <p class="text-sm text-muted-foreground">Manage cameras by location</p>
+            </div>
+            <Button @click="openCreate">
+                <Plus />
+                Add Camera
+            </Button>
+        </div>
+
+        <!-- Filters -->
+        <Card>
+            <CardContent>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <Label class="text-sm font-medium">Status</Label>
+                        <Select v-model="filters.status" @update:model-value="handleStatusChange">
+                            <SelectTrigger class="w-40">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                                <SelectItem value="maintenance">Maintenance</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
+        <!-- DataTable -->
+        <DataTable
+            :columns="columns"
+            :data="cameras.data"
+            :meta="{
+                current_page: cameras.current_page,
+                last_page: cameras.last_page,
+                per_page: cameras.per_page,
+                total: cameras.total,
+                from: cameras.from,
+                to: cameras.to,
+            }"
+            :filters="filters"
+            search-placeholder="Search cameras..."
+            @filter-change="handleFilterChange"
+        />
+    </div>
+
+    <!-- ── Create Dialog ──────────────────────────────────────────────────── -->
+    <Dialog v-model:open="showCreateDialog">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Add Camera</DialogTitle>
+                <DialogDescription>Fill in the details to add a new camera.</DialogDescription>
+            </DialogHeader>
+
+            <form class="space-y-4" @submit.prevent="submitCreate">
+                <div class="grid gap-1.5">
+                    <Label for="c-name">Name <span class="text-destructive">*</span></Label>
+                    <Input id="c-name" v-model="createForm.name" placeholder="Camera name" required />
+                    <InputError :message="createForm.errors.name" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-ip">IP Address <span class="text-destructive">*</span></Label>
+                    <Input id="c-ip" v-model="createForm.ip_address" placeholder="192.168.1.100" required />
+                    <InputError :message="createForm.errors.ip_address" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-location">Location <span class="text-destructive">*</span></Label>
+                    <Select v-model="createForm.location_id">
+                        <SelectTrigger id="c-location" class="w-full">
+                            <SelectValue placeholder="Select location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem
+                                v-for="location in locations"
+                                :key="location.id"
+                                :value="location.id"
+                            >
+                                {{ location.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="createForm.errors.location_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-status">Status <span class="text-destructive">*</span></Label>
+                    <Select v-model="createForm.status">
+                        <SelectTrigger id="c-status" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="createForm.errors.status" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="c-image">Image</Label>
+                    <Input
+                        id="c-image"
+                        type="file"
+                        accept="image/jpg,image/jpeg,image/png,image/webp"
+                        @change="onFileChange(createForm, $event)"
+                    />
+                    <InputError :message="createForm.errors.image" />
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" @click="showCreateDialog = false">
+                        Cancel
+                    </Button>
+                    <Button type="submit" :disabled="createForm.processing">
+                        <Spinner v-if="createForm.processing" class="size-4" />
+                        Save
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+
+    <!-- ── Edit Dialog ────────────────────────────────────────────────────── -->
+    <Dialog v-model:open="showEditDialog">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Edit Camera</DialogTitle>
+                <DialogDescription>
+                    Updating <strong>{{ targetCamera?.name }}</strong>.
+                </DialogDescription>
+            </DialogHeader>
+
+            <form class="space-y-4" @submit.prevent="submitEdit">
+                <div class="grid gap-1.5">
+                    <Label for="e-name">Name <span class="text-destructive">*</span></Label>
+                    <Input id="e-name" v-model="editForm.name" placeholder="Camera name" required />
+                    <InputError :message="editForm.errors.name" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-ip">IP Address <span class="text-destructive">*</span></Label>
+                    <Input id="e-ip" v-model="editForm.ip_address" placeholder="192.168.1.100" required />
+                    <InputError :message="editForm.errors.ip_address" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-location">Location <span class="text-destructive">*</span></Label>
+                    <Select v-model="editForm.location_id">
+                        <SelectTrigger id="e-location" class="w-full">
+                            <SelectValue placeholder="Select location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem
+                                v-for="location in locations"
+                                :key="location.id"
+                                :value="location.id"
+                            >
+                                {{ location.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="editForm.errors.location_id" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-status">Status <span class="text-destructive">*</span></Label>
+                    <Select v-model="editForm.status">
+                        <SelectTrigger id="e-status" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="editForm.errors.status" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-image">Image</Label>
+                    <ImagePreview
+                        v-if="targetCamera?.image_url"
+                        :src="targetCamera.image_url"
+                        :alt="targetCamera.name"
+                        :title="targetCamera.name"
+                    />
+                    <p v-if="targetCamera?.image" class="text-xs text-muted-foreground">
+                        A new upload will replace the existing image.
+                    </p>
+                    <Input
+                        id="e-image"
+                        type="file"
+                        accept="image/jpg,image/jpeg,image/png,image/webp"
+                        @change="onFileChange(editForm, $event)"
+                    />
+                    <InputError :message="editForm.errors.image" />
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" @click="showEditDialog = false">
+                        Cancel
+                    </Button>
+                    <Button type="submit" :disabled="editForm.processing">
+                        <Spinner v-if="editForm.processing" class="size-4" />
+                        Update
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+
+    <!-- ── Delete Confirmation Dialog ────────────────────────────────────── -->
+    <Dialog v-model:open="showDeleteDialog">
+        <DialogContent class="sm:max-w-sm">
+            <DialogHeader>
+                <DialogTitle>Delete Camera</DialogTitle>
+                <DialogDescription>
+                    Are you sure you want to delete
+                    <strong>{{ targetCamera?.name }}</strong>? This action cannot be undone.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
+                <Button variant="destructive" :disabled="deleting" @click="confirmDelete">
+                    <Spinner v-if="deleting" class="size-4" />
+                    Delete
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+</template>
+
 
 type Location = {
     id: number;
@@ -75,264 +533,4 @@ function submitCreate() {
     });
 }
 
-function doSearch() {
-    router.get(
-        '/camera',
-        { search: search.value },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        },
-    );
-}
 
-function imageUrl(path?: string | null) {
-    return path ? `/storage/${path}` : '';
-}
-</script>
-
-<template>
-    <Head title="Camera" />
-
-    <div class="space-y-6 p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold">Camera</h1>
-
-                <p class="text-sm text-gray-500">
-                    Kelola data kamera berdasarkan lokasi.
-                </p>
-            </div>
-
-            <button
-                type="button"
-                class="rounded bg-black px-4 py-2 text-white hover:bg-gray-800"
-                @click="showCreate = true"
-            >
-                Tambah Camera
-            </button>
-        </div>
-
-        <div class="flex gap-2">
-            <input
-                v-model="search"
-                type="text"
-                placeholder="Cari camera, IP, status, atau lokasi..."
-                class="w-full rounded border px-3 py-2"
-                @keyup.enter="doSearch"
-            />
-
-            <button
-                type="button"
-                class="rounded border px-4 py-2 hover:bg-gray-50"
-                @click="doSearch"
-            >
-                Cari
-            </button>
-        </div>
-
-        <div class="overflow-x-auto rounded-xl border bg-white">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left">Image</th>
-                        <th class="px-4 py-3 text-left">Nama</th>
-                        <th class="px-4 py-3 text-left">IP Address</th>
-                        <th class="px-4 py-3 text-left">Lokasi</th>
-                        <th class="px-4 py-3 text-left">Status</th>
-                        <th class="px-4 py-3 text-right">Aksi</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr
-                        v-for="camera in props.cameras.data"
-                        :key="camera.id"
-                        class="border-t"
-                    >
-                        <td class="px-4 py-3">
-                            <img
-                                v-if="camera.image"
-                                :src="imageUrl(camera.image)"
-                                class="h-12 w-16 rounded object-cover"
-                                alt="camera"
-                            />
-
-                            <span v-else>-</span>
-                        </td>
-
-                        <td class="px-4 py-3 font-medium">
-                            {{ camera.name }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ camera.ip_address }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            {{ camera.location?.name ?? '-' }}
-                        </td>
-
-                        <td class="px-4 py-3">
-                            <span class="rounded bg-gray-100 px-2 py-1 text-xs">
-                                {{ camera.status }}
-                            </span>
-                        </td>
-
-                        <td class="px-4 py-3 text-right">
-                            <CameraActions
-                                :camera="camera"
-                                :locations="props.locations"
-                            />
-                        </td>
-                    </tr>
-
-                    <tr v-if="props.cameras.data.length === 0">
-                        <td
-                            colspan="6"
-                            class="px-4 py-6 text-center text-gray-500"
-                        >
-                            Data camera belum tersedia.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div
-            v-if="props.cameras.links && props.cameras.links.length > 0"
-            class="flex flex-wrap gap-2"
-        >
-            <template
-                v-for="link in props.cameras.links"
-                :key="link.label"
-            >
-                <Link
-                    v-if="link.url"
-                    :href="link.url"
-                    preserve-scroll
-                    class="rounded border px-3 py-1 text-sm"
-                    :class="{ 'bg-black text-white': link.active }"
-                    v-html="link.label"
-                />
-
-                <span
-                    v-else
-                    class="rounded border px-3 py-1 text-sm text-gray-400"
-                    v-html="link.label"
-                />
-            </template>
-        </div>
-
-        <div
-            v-if="showCreate"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-        >
-            <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-                <h2 class="mb-4 text-lg font-semibold">
-                    Tambah Camera
-                </h2>
-
-                <form class="space-y-4" @submit.prevent="submitCreate">
-                    <div>
-                        <label class="text-sm font-medium">Nama Camera</label>
-
-                        <input
-                            v-model="form.name"
-                            type="text"
-                            class="w-full rounded border px-3 py-2"
-                        />
-
-                        <p v-if="form.errors.name" class="text-sm text-red-600">
-                            {{ form.errors.name }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">IP Address</label>
-
-                        <input
-                            v-model="form.ip_address"
-                            type="text"
-                            class="w-full rounded border px-3 py-2"
-                        />
-
-                        <p v-if="form.errors.ip_address" class="text-sm text-red-600">
-                            {{ form.errors.ip_address }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">Lokasi</label>
-
-                        <select
-                            v-model="form.location_id"
-                            class="w-full rounded border px-3 py-2"
-                        >
-                            <option value="">Pilih Lokasi</option>
-
-                            <option
-                                v-for="location in props.locations"
-                                :key="location.id"
-                                :value="location.id"
-                            >
-                                {{ location.name }}
-                            </option>
-                        </select>
-
-                        <p v-if="form.errors.location_id" class="text-sm text-red-600">
-                            {{ form.errors.location_id }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">Status</label>
-
-                        <select
-                            v-model="form.status"
-                            class="w-full rounded border px-3 py-2"
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="maintenance">Maintenance</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium">Image</label>
-
-                        <input
-                            type="file"
-                            accept="image/*"
-                            class="w-full rounded border px-3 py-2"
-                            @change="setImage"
-                        />
-
-                        <p v-if="form.errors.image" class="text-sm text-red-600">
-                            {{ form.errors.image }}
-                        </p>
-                    </div>
-
-                    <div class="flex justify-end gap-2">
-                        <button
-                            type="button"
-                            class="rounded border px-4 py-2"
-                            @click="showCreate = false"
-                        >
-                            Batal
-                        </button>
-
-                        <button
-                            type="submit"
-                            class="rounded bg-black px-4 py-2 text-white"
-                            :disabled="form.processing"
-                        >
-                            Simpan
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</template>
