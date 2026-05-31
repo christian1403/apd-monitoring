@@ -41,8 +41,12 @@ const props = defineProps<{
 
 const chartSeries = computed(() => [
     {
-        name: 'Detections',
-        data: [props.chartData.safe, props.chartData.violation],
+        name: 'Jumlah Detection',
+        data: [
+            props.chartData.safe,
+            props.chartData.warning,
+            props.chartData.unsafe,
+        ],
     },
 ]);
 
@@ -60,7 +64,7 @@ const chartOptions = {
         mode: 'dark',
     },
     // Menggunakan CSS Variable atau hex yang matching dengan Radix/Shadcn emerald & destructive
-    colors: ['#10b981', '#ef4444'],
+    colors: ['#10b981', '#f59e0b', '#ef4444'],
     plotOptions: {
         bar: {
             horizontal: false,
@@ -79,7 +83,7 @@ const chartOptions = {
         offsetY: -6,
     },
     xaxis: {
-        categories: ['Safe', 'Violation'],
+        categories: ['Safe', 'Warning', 'Unsafe'],
         labels: {
             style: {
                 colors: '#a1a1aa', // muted-foreground
@@ -256,17 +260,24 @@ const chartOptions = {
                             </td>
 
                             <td class="p-4">
-                                <Badge
-                                    :variant="
-                                        detection.status?.toLowerCase() ===
-                                        'safe'
-                                            ? 'default'
-                                            : 'destructive'
-                                    "
-                                    class="capitalize"
+                                <span
+                                    :class="{
+                                        'bg-emerald-500 text-white':
+                                            detection.status === 'safe',
+                                        'bg-amber-500 text-white':
+                                            detection.status === 'warning',
+                                        'bg-red-500 text-white':
+                                            detection.status === 'unsafe',
+                                    }"
+                                    class="inline-flex rounded-full px-3 py-1 text-xs font-medium"
                                 >
-                                    {{ detection.status }}
-                                </Badge>
+                                    {{
+                                        detection.status
+                                            .charAt(0)
+                                            .toUpperCase() +
+                                        detection.status.slice(1)
+                                    }}
+                                </span>
                             </td>
 
                             <td

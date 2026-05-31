@@ -14,12 +14,11 @@ class DashboardController extends Controller
     public function index()
     {
 
-    $safeCount = Detection::where('status', 'safe')->count();
+$safeCount = Detection::where('status', 'safe')->count();
 
-$violationCount = Detection::whereIn('status', [
-    'warning',
-    'unsafe'
-])->count();
+$warningCount = Detection::where('status', 'warning')->count();
+
+$unsafeCount = Detection::where('status', 'unsafe')->count();
 
 return Inertia::render('Dashboard', [
     'stats' => [
@@ -29,10 +28,11 @@ return Inertia::render('Dashboard', [
         'detections' => Detection::count(),
     ],
 
-    'chartData' => [
-        'safe' => $safeCount,
-        'violation' => $violationCount,
-    ],
+'chartData' => [
+    'safe' => $safeCount,
+    'warning' => $warningCount,
+    'unsafe' => $unsafeCount,
+],
 
     'latestDetections' => Detection::with([
         'item',
