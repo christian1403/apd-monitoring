@@ -11,4 +11,5 @@ Route::middleware(['auth', 'verified'])
         Route::post('/', [CameraController::class, 'store'])->name('store');
         Route::put('/{camera}', [CameraController::class, 'update'])->name('update');
         Route::delete('/{camera}', [CameraController::class, 'destroy'])->name('destroy');
+        Route::get('/export/{format}', [CameraController::class, 'export'])->name('export');
     });

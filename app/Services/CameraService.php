@@ -66,4 +66,13 @@ class CameraService extends BaseService
 
         return $this->cameraRepository->delete($id);
     }
+
+    public function getExportData(
+        string $search = '',
+        string $sortBy = 'created_at',
+        string $sortDir = 'desc',
+        array $where = []
+    ) {
+        return $this->cameraRepository->exportData($search, $sortBy, $sortDir, $where ?: null);
+    }
 }

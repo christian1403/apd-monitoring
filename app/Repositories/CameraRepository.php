@@ -47,10 +47,17 @@ class CameraRepository extends BaseRepository implements CameraRepositoryInterfa
         string $sortDir = 'desc',
         array $where = null
     ): Collection {
-        $query = $this->model->newQuery();
+        $query = $this->model->newQuery()->with('location');
 
         if ($search !== '') {
-            $this->applyQuerySearch($query, $search, ['name', 'description']);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%")
+                    ->orWhereHas('location', function ($lq) use ($search) {
+                        $lq->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
         if ($where) $query->where($where);

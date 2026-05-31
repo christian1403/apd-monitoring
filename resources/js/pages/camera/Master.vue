@@ -265,6 +265,8 @@ const columns: ColumnDef<Camera>[] = [
                 to: cameras.to,
             }"
             :filters="filters"
+            :export-formats="['xlsx', 'csv']"
+            export-base-url="/camera/export"
             search-placeholder="Search cameras..."
             @filter-change="handleFilterChange"
         />

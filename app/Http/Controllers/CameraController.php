@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CamerasExport;
 use App\Http\Requests\Cameras\StoreCameraRequest;
 use App\Http\Requests\Cameras\UpdateCameraRequest;
 use App\Models\Camera;
@@ -11,6 +12,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CameraController extends Controller
 {
@@ -78,5 +81,31 @@ class CameraController extends Controller
         $this->cameraService->deleteCamera($camera->id);
 
         return redirect()->route('camera.index');
+    }
+
+    public function export(Request $request, string $format): BinaryFileResponse
+    {
+        $format = in_array($format, ['xlsx', 'csv']) ? $format : 'xlsx';
+
+        $search  = $request->string('search', '')->toString();
+        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'ip_address', 'status', 'created_at'])
+                        ? $request->string('sort_by')->toString()
+                        : 'created_at';
+        $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
+                        ? $request->string('sort_dir')->toString()
+                        : 'desc';
+        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive', 'maintenance'])
+                        ? $request->string('status')->toString()
+                        : 'all';
+
+        $where = [];
+        if ($status !== 'all') {
+            $where['status'] = $status;
+        }
+
+        return Excel::download(
+            new CamerasExport($search, $sortBy, $sortDir, $where),
+            'cameras.' . $format,
+        );
     }
 }
