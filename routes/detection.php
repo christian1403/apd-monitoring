@@ -11,4 +11,5 @@ Route::middleware(['auth', 'verified'])
         Route::post('/', [DetectionController::class, 'store'])->name('store');
         Route::put('/{detection}', [DetectionController::class, 'update'])->name('update');
         Route::delete('/{detection}', [DetectionController::class, 'destroy'])->name('destroy');
+        Route::get('/export/{format}', [DetectionController::class, 'export'])->name('export');
     });

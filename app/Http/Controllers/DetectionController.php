@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DetectionsExport;
 use App\Http\Requests\Detections\StoreDetectionRequest;
 use App\Http\Requests\Detections\UpdateDetectionRequest;
 use App\Models\Camera;
@@ -13,6 +14,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DetectionController extends Controller
 {
@@ -82,6 +85,32 @@ class DetectionController extends Controller
         $this->detectionService->deleteDetection($detection->id);
 
         return redirect()->route('detection.index');
+    }
+
+    public function export(Request $request, string $format): BinaryFileResponse
+    {
+        $format = in_array($format, ['xlsx', 'csv']) ? $format : 'xlsx';
+
+        $search  = $request->string('search', '')->toString();
+        $sortBy  = in_array($request->string('sort_by')->toString(), ['status', 'detected_at', 'created_at'])
+                        ? $request->string('sort_by')->toString()
+                        : 'created_at';
+        $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
+                        ? $request->string('sort_dir')->toString()
+                        : 'desc';
+        $status  = in_array($request->string('status')->toString(), ['all', 'safe', 'warning', 'unsafe'])
+                        ? $request->string('status')->toString()
+                        : 'all';
+
+        $where = [];
+        if ($status !== 'all') {
+            $where['status'] = $status;
+        }
+
+        return Excel::download(
+            new DetectionsExport($search, $sortBy, $sortDir, $where),
+            'detections.' . $format,
+        );
     }
 }
 

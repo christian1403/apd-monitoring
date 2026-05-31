@@ -279,6 +279,8 @@ const columns: ColumnDef<Detection>[] = [
                 to: detections.to,
             }"
             :filters="filters"
+            :export-formats="['xlsx', 'csv']"
+            export-base-url="/detection/export"
             search-placeholder="Search detections..."
             @filter-change="handleFilterChange"
         />

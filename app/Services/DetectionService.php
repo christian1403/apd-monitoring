@@ -88,4 +88,13 @@ class DetectionService extends BaseService
 
         return $this->detectionRepository->delete($id);
     }
+
+    public function getExportData(
+        string $search = '',
+        string $sortBy = 'created_at',
+        string $sortDir = 'desc',
+        array $where = []
+    ) {
+        return $this->detectionRepository->exportData($search, $sortBy, $sortDir, $where ?: null);
+    }
 }

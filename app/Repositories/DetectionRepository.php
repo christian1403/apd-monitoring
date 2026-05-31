@@ -52,10 +52,22 @@ class DetectionRepository extends BaseRepository implements DetectionRepositoryI
         string $sortDir = 'desc',
         array $where = null
     ): Collection {
-        $query = $this->model->newQuery();
+        $query = $this->model->newQuery()->with(['item', 'camera', 'location']);
 
         if ($search !== '') {
-            $this->applyQuerySearch($query, $search, ['name', 'description']);
+            $query->where(function ($q) use ($search) {
+                $q->where('status', 'like', "%{$search}%")
+                    ->orWhereHas('item', function ($iq) use ($search) {
+                        $iq->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('camera', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%")
+                            ->orWhere('ip_address', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('location', function ($lq) use ($search) {
+                        $lq->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
         if ($where) $query->where($where);
