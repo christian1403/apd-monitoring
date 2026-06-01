@@ -30,15 +30,17 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Plus } from 'lucide-vue-next';
 import type { PaginatedData } from '@/types/pagination';
-import type { Camera, CameraFilters } from '@/types/camera';
+import type { Camera, CameraFilters, CameraStatus } from '@/types/camera';
 import CameraActions from './CameraActions.vue';
 import type { AcceptableValue } from 'reka-ui';
 import type { Location } from '@/types/location';
+import { capitalizeFirstLetter } from '@/lib/utils';
 
 const props = defineProps<{
     cameras: PaginatedData<Camera>;
     locations: Location[];
     filters: CameraFilters;
+    statuses: Array<CameraStatus>;
 }>();
 
 defineOptions({
@@ -242,9 +244,7 @@ const columns: ColumnDef<Camera>[] = [
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                                <SelectItem value="maintenance">Maintenance</SelectItem>
+                                <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -319,9 +319,7 @@ const columns: ColumnDef<Camera>[] = [
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                            <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
                         </SelectContent>
                     </Select>
                     <InputError :message="createForm.errors.status" />
@@ -400,9 +398,7 @@ const columns: ColumnDef<Camera>[] = [
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                            <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
                         </SelectContent>
                     </Select>
                     <InputError :message="editForm.errors.status" />

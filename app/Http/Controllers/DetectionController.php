@@ -16,6 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Enums\DetectionStatus;
 
 class DetectionController extends Controller
 {
@@ -33,7 +34,7 @@ class DetectionController extends Controller
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
         $perPage = min(max($request->integer('per_page', 10), 10), 100);
-        $status  = in_array($request->string('status')->toString(), ['all', 'safe', 'warning', 'unsafe'])
+        $status  = in_array($request->string('status')->toString(), ['all', DetectionStatus::SAFE->value, DetectionStatus::WARNING->value, DetectionStatus::UNSAFE->value])
                         ? $request->string('status')->toString()
                         : 'all';
 
@@ -49,6 +50,7 @@ class DetectionController extends Controller
             'items'      => Item::orderBy('name')->get(),
             'cameras'    => Camera::with('location')->orderBy('name')->get(),
             'locations'  => Location::orderBy('name')->get(),
+            'statuses' => DetectionStatus::cases(),
             'filters'    => [
                 'search'   => $search,
                 'sort_by'  => $sortBy,
@@ -66,6 +68,7 @@ class DetectionController extends Controller
             $request->file('image'),
         );
 
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Detection created.')]);
         return redirect()->route('detection.index');
     }
 
@@ -76,6 +79,7 @@ class DetectionController extends Controller
             $request->safe()->except('image'),
             $request->file('image'),
         );
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Detection updated.')]);
 
         return redirect()->route('detection.index');
     }
@@ -83,7 +87,7 @@ class DetectionController extends Controller
     public function destroy(Detection $detection): RedirectResponse
     {
         $this->detectionService->deleteDetection($detection->id);
-
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Detection deleted.')]);
         return redirect()->route('detection.index');
     }
 
@@ -98,7 +102,7 @@ class DetectionController extends Controller
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
-        $status  = in_array($request->string('status')->toString(), ['all', 'safe', 'warning', 'unsafe'])
+        $status  = in_array($request->string('status')->toString(), ['all', DetectionStatus::SAFE->value, DetectionStatus::WARNING->value, DetectionStatus::UNSAFE->value])
                         ? $request->string('status')->toString()
                         : 'all';
 

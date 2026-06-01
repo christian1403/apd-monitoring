@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Enums\CameraStatus;
 
 class CameraController extends Controller
 {
@@ -31,7 +32,7 @@ class CameraController extends Controller
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
         $perPage = min(max($request->integer('per_page', 10), 10), 100);
-        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive', 'maintenance'])
+        $status  = in_array($request->string('status')->toString(), array_merge(['all'], array_map(fn($case) => $case->value, CameraStatus::cases())))
                         ? $request->string('status')->toString()
                         : 'all';
 
@@ -41,10 +42,11 @@ class CameraController extends Controller
         }
 
         $cameras = $this->cameraService->getPaginatedCameras($search, $sortBy, $sortDir, $perPage, $where);
-
+        
         return Inertia::render('camera/Master', [
             'cameras'   => $cameras,
             'locations' => Location::orderBy('name')->get(),
+            'statuses'  => CameraStatus::cases(),
             'filters'   => [
                 'search'   => $search,
                 'sort_by'  => $sortBy,
@@ -61,7 +63,7 @@ class CameraController extends Controller
             $request->safe()->except('image'),
             $request->file('image'),
         );
-
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Camera created.')]);
         return redirect()->route('camera.index');
     }
 
@@ -72,14 +74,14 @@ class CameraController extends Controller
             $request->safe()->except('image'),
             $request->file('image'),
         );
-
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Camera updated.')]);
         return redirect()->route('camera.index');
     }
 
     public function destroy(Camera $camera): RedirectResponse
     {
         $this->cameraService->deleteCamera($camera->id);
-
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Camera deleted.')]);
         return redirect()->route('camera.index');
     }
 
@@ -94,7 +96,7 @@ class CameraController extends Controller
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
-        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive', 'maintenance'])
+        $status  = in_array($request->string('status')->toString(), array_merge(['all'], array_map(fn($case) => $case->value, CameraStatus::cases())))
                         ? $request->string('status')->toString()
                         : 'all';
 

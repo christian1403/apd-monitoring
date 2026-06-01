@@ -30,12 +30,13 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Plus } from 'lucide-vue-next';
 import type { PaginatedData } from '@/types/pagination';
-import type { Detection, DetectionFilters } from '@/types/detection';
+import type { Detection, DetectionFilters, DetectionStatus } from '@/types/detection';
 import type { Item } from '@/types/item';
 import type { Camera } from '@/types/camera';
 import type { Location } from '@/types/location';
 import DetectionActions from './DetectionActions.vue';
 import type { AcceptableValue } from 'reka-ui';
+import { capitalizeFirstLetter } from '@/lib/utils';
 
 const props = defineProps<{
     detections: PaginatedData<Detection>;
@@ -43,6 +44,7 @@ const props = defineProps<{
     cameras: (Pick<Camera, 'id' | 'name' | 'ip_address'> & { location: Pick<Location, 'id' | 'name'> | null })[];
     locations: Pick<Location, 'id' | 'name'>[];
     filters: DetectionFilters;
+    statuses: Array<DetectionStatus>;
 }>();
 
 defineOptions({
@@ -256,9 +258,7 @@ const columns: ColumnDef<Detection>[] = [
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="safe">Safe</SelectItem>
-                                <SelectItem value="warning">Warning</SelectItem>
-                                <SelectItem value="unsafe">Unsafe</SelectItem>
+                                <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -347,9 +347,7 @@ const columns: ColumnDef<Detection>[] = [
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="safe">Safe</SelectItem>
-                            <SelectItem value="warning">Warning</SelectItem>
-                            <SelectItem value="unsafe">Unsafe</SelectItem>
+                            <SelectItem v-for="status in statuses" :key="status" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
                         </SelectContent>
                     </Select>
                     <InputError :message="createForm.errors.status" />
@@ -449,9 +447,7 @@ const columns: ColumnDef<Detection>[] = [
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="safe">Safe</SelectItem>
-                            <SelectItem value="warning">Warning</SelectItem>
-                            <SelectItem value="unsafe">Unsafe</SelectItem>
+                            <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
                         </SelectContent>
                     </Select>
                     <InputError :message="editForm.errors.status" />

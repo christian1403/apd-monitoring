@@ -1,11 +1,13 @@
 import type { DataTableFilters } from './pagination';
 import type { Location } from './location';
 
+export type CameraStatus = 'active' | 'inactive' | 'maintenance';
+
 export type Camera = {
     id: number;
     name: string;
     ip_address: string;
-    status: 'active' | 'inactive' | 'maintenance';
+    status: CameraStatus;
     image: string | null;
     image_url: string | null;
     location_id: number | null;
@@ -15,5 +17,5 @@ export type Camera = {
 };
 
 export type CameraFilters = DataTableFilters & {
-    status: 'all' | 'active' | 'inactive' | 'maintenance';
+    status: 'all' | CameraStatus;
 };

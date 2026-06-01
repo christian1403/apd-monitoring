@@ -3,12 +3,14 @@ import type { Item } from './item';
 import type { Camera } from './camera';
 import type { Location } from './location';
 
+export type DetectionStatus = 'safe' | 'warning' | 'unsafe';
+
 export type Detection = {
     id: number;
     item_id: number | null;
     camera_id: number | null;
     location_id: number | null;
-    status: 'safe' | 'warning' | 'unsafe';
+    status: DetectionStatus;
     image: string | null;
     image_url: string | null;
     detected_at: string | null;
@@ -20,5 +22,5 @@ export type Detection = {
 };
 
 export type DetectionFilters = DataTableFilters & {
-    status: 'all' | 'safe' | 'warning' | 'unsafe';
+    status: 'all' | DetectionStatus;
 };
