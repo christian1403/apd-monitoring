@@ -116,7 +116,7 @@ const chartOptions = {
 <template>
     <Head title="Dashboard" />
 
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4">
+    <div class="mx-auto flex w-full flex-col gap-6 p-4">
         <div>
             <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
             <p class="text-sm text-muted-foreground">
