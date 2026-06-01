@@ -408,4 +408,9 @@ abstract class BaseRepository
         $d = vsprintf($d, $query->getBindings());
         dd($d);
     }
+
+    public function count(): int
+    {
+        return $this->model->count();
+    }
 }

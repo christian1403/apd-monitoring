@@ -34,6 +34,8 @@ const props = defineProps<{
     chartData: {
         safe: number;
         violation: number;
+        warning: number;
+        unsafe: number;
     };
 
     latestDetections: any[];

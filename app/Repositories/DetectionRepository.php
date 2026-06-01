@@ -76,4 +76,18 @@ class DetectionRepository extends BaseRepository implements DetectionRepositoryI
 
         return $query->get();
     }
+
+    public function getCountByStatus(string $status): int
+    {
+        return $this->model->where('status', $status)->count();
+    }
+
+    public function getLatestDetections(int $limit = 10): Collection
+    {
+        return $this->model->newQuery()
+            ->with(['item', 'camera', 'location'])
+            ->latest()
+            ->take($limit)
+            ->get();
+    }
 }

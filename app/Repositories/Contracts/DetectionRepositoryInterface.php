@@ -21,4 +21,8 @@ interface DetectionRepositoryInterface
         string $sortDir,
         array $where = null
     ): Collection;
+
+    public function getCountByStatus(string $status): int;
+
+    public function getLatestDetections(int $limit): Collection;
 }

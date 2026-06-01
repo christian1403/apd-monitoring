@@ -2,48 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Item;
-use App\Models\Location;
-use App\Models\Camera;
-use App\Models\Detection;
 use Inertia\Inertia;
-
-
+use App\Services\DashboardService;
 class DashboardController extends Controller
 {
+    public function __construct(
+        protected DashboardService $dashboardService,
+    ) {}
+    
     public function index()
     {
-
-$safeCount = Detection::where('status', 'safe')->count();
-
-$warningCount = Detection::where('status', 'warning')->count();
-
-$unsafeCount = Detection::where('status', 'unsafe')->count();
-
-return Inertia::render('Dashboard', [
-    'stats' => [
-        'items' => Item::count(),
-        'locations' => Location::count(),
-        'cameras' => Camera::count(),
-        'detections' => Detection::count(),
-    ],
-
-'chartData' => [
-    'safe' => $safeCount,
-    'warning' => $warningCount,
-    'unsafe' => $unsafeCount,
-],
-
-    'latestDetections' => Detection::with([
-        'item',
-        'camera',
-        'location'
-    ])
-    ->latest()
-    ->take(10)
-    ->get(),
-]);
-
-        
+        $dashboardData = $this->dashboardService->getDashboardStats();
+        return Inertia::render('Dashboard', $dashboardData);
     }
 }
