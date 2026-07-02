@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ItemsExport;
 use App\Http\Requests\Items\StoreItemRequest;
 use App\Http\Requests\Items\UpdateItemRequest;
 use App\Services\FileService;
@@ -12,7 +13,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use App\Exports\ItemsExport;
 
 class ItemController extends Controller
 {
@@ -23,15 +23,15 @@ class ItemController extends Controller
 
     public function index(Request $request): Response
     {
-        $search  = $request->string('search', '')->toString();
-        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'is_active', 'created_at'])
+        $search = $request->string('search', '')->toString();
+        $sortBy = in_array($request->string('sort_by')->toString(), ['name', 'is_active', 'created_at'])
                         ? $request->string('sort_by')->toString()
                         : 'created_at';
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
         $perPage = min(max($request->integer('per_page', 10), 10), 100);
-        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive'])
+        $status = in_array($request->string('status')->toString(), ['all', 'active', 'inactive'])
                         ? $request->string('status')->toString()
                         : 'all';
 
@@ -41,18 +41,18 @@ class ItemController extends Controller
         } elseif ($status === 'inactive') {
             $where['is_active'] = false;
         }
-        
+
         $paginator = $this->itemService->getPaginatedItems($search, $sortBy, $sortDir, $perPage, $where);
 
         return Inertia::render('items/Master', [
-            'items'     => $paginator,
+            'items' => $paginator,
             'pageTitle' => 'Items',
-            'filters'   => [
-                'search'   => $search,
-                'sort_by'  => $sortBy,
+            'filters' => [
+                'search' => $search,
+                'sort_by' => $sortBy,
                 'sort_dir' => $sortDir,
                 'per_page' => $perPage,
-                'status'   => $status,
+                'status' => $status,
             ],
         ]);
     }
@@ -95,14 +95,14 @@ class ItemController extends Controller
     {
         $format = in_array($format, ['xlsx', 'csv']) ? $format : 'xlsx';
 
-        $search  = $request->string('search', '')->toString();
-        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'is_active', 'created_at'])
+        $search = $request->string('search', '')->toString();
+        $sortBy = in_array($request->string('sort_by')->toString(), ['name', 'is_active', 'created_at'])
                         ? $request->string('sort_by')->toString()
                         : 'created_at';
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
-        $status  = in_array($request->string('status')->toString(), ['all', 'active', 'inactive'])
+        $status = in_array($request->string('status')->toString(), ['all', 'active', 'inactive'])
                         ? $request->string('status')->toString()
                         : 'all';
 
@@ -112,10 +112,10 @@ class ItemController extends Controller
         } elseif ($status === 'inactive') {
             $where['is_active'] = false;
         }
+
         return Excel::download(
-        new ItemsExport($search, $sortBy, $sortDir, $where),
-            'items.' . $format,
+            new ItemsExport($search, $sortBy, $sortDir, $where),
+            'items.'.$format,
         );
     }
 }
-

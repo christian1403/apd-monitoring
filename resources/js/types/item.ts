@@ -3,6 +3,7 @@ import type { DataTableFilters } from './pagination';
 export type Item = {
     id: number;
     name: string;
+    code: string;
     description: string | null;
     image: string | null;
     image_url: string | null;

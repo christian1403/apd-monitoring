@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Infrastructure\BaseService;
+use App\Repositories\Contracts\CameraRepositoryInterface;
 use App\Repositories\Contracts\DetectionRepositoryInterface;
 use App\Repositories\Contracts\ItemRepositoryInterface;
 use App\Repositories\Contracts\LocationRepositoryInterface;
-use App\Repositories\Contracts\CameraRepositoryInterface;
 
 class DashboardService extends BaseService
 {

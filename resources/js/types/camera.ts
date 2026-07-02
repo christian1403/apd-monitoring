@@ -1,5 +1,5 @@
-import type { DataTableFilters } from './pagination';
 import type { Location } from './location';
+import type { DataTableFilters } from './pagination';
 
 export type CameraStatus = 'active' | 'inactive' | 'maintenance';
 

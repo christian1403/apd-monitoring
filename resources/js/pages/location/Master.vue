@@ -1,14 +1,13 @@
 ```vue
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { h, ref } from 'vue';
 import type { ColumnDef } from '@tanstack/vue-table';
+import { Plus } from 'lucide-vue-next';
+import { h, ref } from 'vue';
 
 import LocationController from '@/actions/App/Http/Controllers/LocationController';
-import { index } from '@/routes/location';
-
 import InputError from '@/components/InputError.vue';
-import LocationActions from './locationActions.vue';
+
 
 import { Button } from '@/components/ui/button';
 
@@ -27,12 +26,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import { Spinner } from '@/components/ui/spinner';
+import { index } from '@/routes/location';
 
-import { Plus } from 'lucide-vue-next';
 
-import type { DataTableFilters, PaginatedData } from '@/types/pagination';
 
 import type { Location } from '@/types/location';
+import type { DataTableFilters, PaginatedData } from '@/types/pagination';
+import LocationActions from './locationActions.vue';
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -114,7 +114,9 @@ function openEdit(location: Location) {
 }
 
 function submitEdit() {
-    if (!targetItem.value) return;
+    if (!targetItem.value) {
+return;
+}
 
     editForm.put(
         LocationController.update.url(targetItem.value.id),
@@ -138,7 +140,9 @@ function openDelete(location: Location) {
 }
 
 function confirmDelete() {
-    if (!targetItem.value) return;
+    if (!targetItem.value) {
+return;
+}
 
     deleting.value = true;
 

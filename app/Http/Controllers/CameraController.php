@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CameraStatus;
 use App\Exports\CamerasExport;
 use App\Http\Requests\Cameras\StoreCameraRequest;
 use App\Http\Requests\Cameras\UpdateCameraRequest;
@@ -14,7 +15,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use App\Enums\CameraStatus;
 
 class CameraController extends Controller
 {
@@ -24,15 +24,15 @@ class CameraController extends Controller
 
     public function index(Request $request): Response
     {
-        $search  = $request->string('search', '')->toString();
-        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'ip_address', 'status', 'created_at'])
+        $search = $request->string('search', '')->toString();
+        $sortBy = in_array($request->string('sort_by')->toString(), ['name', 'ip_address', 'status', 'created_at'])
                         ? $request->string('sort_by')->toString()
                         : 'created_at';
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
         $perPage = min(max($request->integer('per_page', 10), 10), 100);
-        $status  = in_array($request->string('status')->toString(), array_merge(['all'], array_map(fn($case) => $case->value, CameraStatus::cases())))
+        $status = in_array($request->string('status')->toString(), array_merge(['all'], array_map(fn ($case) => $case->value, CameraStatus::cases())))
                         ? $request->string('status')->toString()
                         : 'all';
 
@@ -42,17 +42,17 @@ class CameraController extends Controller
         }
 
         $cameras = $this->cameraService->getPaginatedCameras($search, $sortBy, $sortDir, $perPage, $where);
-        
+
         return Inertia::render('camera/Master', [
-            'cameras'   => $cameras,
+            'cameras' => $cameras,
             'locations' => Location::orderBy('name')->get(),
-            'statuses'  => CameraStatus::cases(),
-            'filters'   => [
-                'search'   => $search,
-                'sort_by'  => $sortBy,
+            'statuses' => CameraStatus::cases(),
+            'filters' => [
+                'search' => $search,
+                'sort_by' => $sortBy,
                 'sort_dir' => $sortDir,
                 'per_page' => $perPage,
-                'status'   => $status,
+                'status' => $status,
             ],
         ]);
     }
@@ -64,6 +64,7 @@ class CameraController extends Controller
             $request->file('image'),
         );
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Camera created.')]);
+
         return redirect()->route('camera.index');
     }
 
@@ -75,6 +76,7 @@ class CameraController extends Controller
             $request->file('image'),
         );
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Camera updated.')]);
+
         return redirect()->route('camera.index');
     }
 
@@ -82,6 +84,7 @@ class CameraController extends Controller
     {
         $this->cameraService->deleteCamera($camera->id);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Camera deleted.')]);
+
         return redirect()->route('camera.index');
     }
 
@@ -89,14 +92,14 @@ class CameraController extends Controller
     {
         $format = in_array($format, ['xlsx', 'csv']) ? $format : 'xlsx';
 
-        $search  = $request->string('search', '')->toString();
-        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'ip_address', 'status', 'created_at'])
+        $search = $request->string('search', '')->toString();
+        $sortBy = in_array($request->string('sort_by')->toString(), ['name', 'ip_address', 'status', 'created_at'])
                         ? $request->string('sort_by')->toString()
                         : 'created_at';
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
-        $status  = in_array($request->string('status')->toString(), array_merge(['all'], array_map(fn($case) => $case->value, CameraStatus::cases())))
+        $status = in_array($request->string('status')->toString(), array_merge(['all'], array_map(fn ($case) => $case->value, CameraStatus::cases())))
                         ? $request->string('status')->toString()
                         : 'all';
 
@@ -107,7 +110,7 @@ class CameraController extends Controller
 
         return Excel::download(
             new CamerasExport($search, $sortBy, $sortDir, $where),
-            'cameras.' . $format,
+            'cameras.'.$format,
         );
     }
 }

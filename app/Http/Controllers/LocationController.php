@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\LocationsExport;
 use App\Http\Requests\Location\StoreLocationRequest;
 use App\Http\Requests\Location\UpdateLocationRequest;
 use App\Services\LocationService;
@@ -11,7 +12,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use App\Exports\LocationsExport;
 
 class LocationController extends Controller
 {
@@ -21,26 +21,27 @@ class LocationController extends Controller
 
     public function index(Request $request): Response
     {
-        $search  = $request->string('search', '')->toString();
-        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'created_at'])
+        $search = $request->string('search', '')->toString();
+        $sortBy = in_array($request->string('sort_by')->toString(), ['name', 'created_at'])
                         ? $request->string('sort_by')->toString()
                         : 'created_at';
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
                         ? $request->string('sort_dir')->toString()
                         : 'desc';
         $perPage = min(max($request->integer('per_page', 10), 10), 100);
-        
+
         $paginator = $this->locationService->getPaginatedLocation($search, $sortBy, $sortDir, $perPage);
+
         return Inertia::render('location/Master', [
-            'items'     => $paginator,
+            'items' => $paginator,
             'pageTitle' => 'Locations',
-            'filters'   => [
-                'search'   => $search,
-                'sort_by'  => $sortBy,
+            'filters' => [
+                'search' => $search,
+                'sort_by' => $sortBy,
                 'sort_dir' => $sortDir,
                 'per_page' => $perPage,
             ],
-        ]);                                                                  
+        ]);
     }
 
     public function store(StoreLocationRequest $request): RedirectResponse
@@ -77,8 +78,8 @@ class LocationController extends Controller
     {
         $format = in_array($format, ['xlsx', 'csv']) ? $format : 'xlsx';
 
-        $search  = $request->string('search', '')->toString();
-        $sortBy  = in_array($request->string('sort_by')->toString(), ['name', 'created_at'])
+        $search = $request->string('search', '')->toString();
+        $sortBy = in_array($request->string('sort_by')->toString(), ['name', 'created_at'])
                         ? $request->string('sort_by')->toString()
                         : 'created_at';
         $sortDir = in_array($request->string('sort_dir')->toString(), ['asc', 'desc'])
@@ -89,7 +90,6 @@ class LocationController extends Controller
             search: $search,
             sortBy: $sortBy,
             sortDir: $sortDir,
-        ), 'locations.' . $format);
+        ), 'locations.'.$format);
     }
 }
-

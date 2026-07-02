@@ -145,8 +145,6 @@ abstract class BaseRepository
     /**
      * Get paginated records from an existing query builder.
      *
-     * @param  int  $perPage
-     * @param  string  $pageName
      * @return LengthAwarePaginator<T>
      */
     public function paginateQuery(Builder $query, int $perPage = 10, string $pageName = 'page'): LengthAwarePaginator

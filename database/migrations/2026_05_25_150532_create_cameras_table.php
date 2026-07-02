@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if(!Schema::hasTable('cameras')) {
+        if (! Schema::hasTable('cameras')) {
             Schema::create('cameras', function (Blueprint $table) {
                 $table->id();
 

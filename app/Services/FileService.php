@@ -3,16 +3,18 @@
 namespace App\Services;
 
 use App\Infrastructure\BaseService;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FileService extends BaseService
 {
     public const DISK_LOCAL = 'local';
-    public const DISK_S3    = 's3';
+
+    public const DISK_S3 = 's3';
 
     /**
      * Resolve a Storage disk instance by type.
@@ -28,7 +30,7 @@ class FileService extends BaseService
      * Store an uploaded file on the given disk.
      *
      * @param  'local'|'s3'  $disk
-     * @return string  The stored file path relative to the disk root.
+     * @return string The stored file path relative to the disk root.
      */
     public function store(
         UploadedFile $file,
@@ -37,7 +39,7 @@ class FileService extends BaseService
         string $visibility = 'private',
     ): string {
         $path = $file->store($directory, [
-            'disk'       => $disk,
+            'disk' => $disk,
             'visibility' => $visibility,
         ]);
 
@@ -88,20 +90,20 @@ class FileService extends BaseService
      *
      * @param  'local'|'s3'  $disk
      *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     * @throws FileNotFoundException
      */
     public function download(
         string $path,
         string $disk = self::DISK_LOCAL,
         ?string $fileName = null,
     ): StreamedResponse {
-        $storage  = $this->disk($disk);
+        $storage = $this->disk($disk);
         $fileName = $fileName ?? basename($path);
-        $mime     = $storage->mimeType($path) ?: 'application/octet-stream';
+        $mime = $storage->mimeType($path) ?: 'application/octet-stream';
 
         return $storage->download($path, $fileName, [
-            'Content-Type'        => $mime,
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
     }
 
@@ -110,23 +112,23 @@ class FileService extends BaseService
      *
      * @param  'local'|'s3'  $disk
      *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     * @throws FileNotFoundException
      */
     public function preview(
         string $path,
         string $disk = self::DISK_LOCAL,
     ): StreamedResponse {
-        $storage  = $this->disk($disk);
+        $storage = $this->disk($disk);
         $fileName = basename($path);
-        $mime     = $storage->mimeType($path) ?: 'application/octet-stream';
+        $mime = $storage->mimeType($path) ?: 'application/octet-stream';
 
         return response()->stream(
             fn () => fpassthru($storage->readStream($path)),
             200,
             [
-                'Content-Type'        => $mime,
-                'Content-Disposition' => 'inline; filename="' . $fileName . '"',
-                'Cache-Control'       => 'private, no-store',
+                'Content-Type' => $mime,
+                'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+                'Cache-Control' => 'private, no-store',
             ],
         );
     }

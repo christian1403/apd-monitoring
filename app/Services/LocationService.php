@@ -6,7 +6,7 @@ use App\Infrastructure\BaseService;
 use App\Models\Location;
 use App\Repositories\Contracts\LocationRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use \Illuminate\Support\Collection;
+use Illuminate\Support\Collection;
 
 class LocationService extends BaseService
 {
@@ -38,7 +38,7 @@ class LocationService extends BaseService
 
     public function createLocation(array $data): Location
     {
-    
+
         /** @var Location */
         return $this->locationRepository->save($data);
     }
@@ -64,5 +64,3 @@ class LocationService extends BaseService
         return $this->locationRepository->exportData($search, $sortBy, $sortDir, $where);
     }
 }
-
-

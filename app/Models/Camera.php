@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Services\FileService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Services\FileService;
+
 class Camera extends Model
 {
     protected $table = 'cameras';
+
     protected $primaryKey = 'id';
+
     protected $fillable = [
         'name',
         'ip_address',
@@ -19,11 +22,13 @@ class Camera extends Model
     ];
 
     protected $appends = ['image_url'];
+
     public function getImageUrlAttribute(): ?string
     {
         if ($this->image) {
             return app(FileService::class)->getUrl($this->image);
         }
+
         return null;
     }
 

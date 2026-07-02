@@ -6,7 +6,7 @@ use App\Infrastructure\BaseRepository;
 use App\Models\Location;
 use App\Repositories\Contracts\LocationRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use \Illuminate\Support\Collection;
+use Illuminate\Support\Collection;
 
 class LocationRepository extends BaseRepository implements LocationRepositoryInterface
 {
@@ -20,7 +20,7 @@ class LocationRepository extends BaseRepository implements LocationRepositoryInt
         string $sortBy = 'created_at',
         string $sortDir = 'desc',
         int $perPage = 10,
-        array $where = null
+        ?array $where = null
     ): LengthAwarePaginator {
         $query = $this->model->newQuery();
 
@@ -28,7 +28,9 @@ class LocationRepository extends BaseRepository implements LocationRepositoryInt
             $this->applyQuerySearch($query, $search, ['name', 'description']);
         }
 
-        if ($where) $query->where($where);
+        if ($where) {
+            $query->where($where);
+        }
 
         $this->applySorting($query, $sortBy, strtoupper($sortDir));
 
@@ -39,7 +41,7 @@ class LocationRepository extends BaseRepository implements LocationRepositoryInt
         string $search = '',
         string $sortBy = 'created_at',
         string $sortDir = 'desc',
-        array $where = null
+        ?array $where = null
     ): Collection {
         $query = $this->model->newQuery();
 
@@ -47,7 +49,9 @@ class LocationRepository extends BaseRepository implements LocationRepositoryInt
             $this->applyQuerySearch($query, $search, ['name', 'description']);
         }
 
-        if ($where) $query->where($where);
+        if ($where) {
+            $query->where($where);
+        }
 
         $this->applySorting($query, $sortBy, strtoupper($sortDir));
 

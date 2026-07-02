@@ -2,15 +2,16 @@
 
 namespace App\Exports;
 
-use App\Models\Item;
+use app\Services\ItemService;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use app\Services\ItemService;
 
 class ItemsExport implements FromCollection, WithHeadings, WithMapping
 {
     protected ItemService $itemService;
+
     public function __construct(
         private readonly string $search = '',
         private readonly string $sortBy = 'created_at',
@@ -21,8 +22,8 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping
     }
 
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * @return Collection
+     */
     public function collection()
     {
         return $this->itemService->getExportData(
@@ -36,20 +37,22 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping
     public function map($item): array
     {
         static $counter = 1;
+
         return [
             $counter++,
             $item->name,
+            $item->code,
             $item->description,
             $item->is_active ? 'Active' : 'Inactive',
         ];
     }
-
 
     public function headings(): array
     {
         return [
             'No',
             'Name',
+            'Code',
             'Description',
             'Status',
         ];

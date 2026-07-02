@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ImageIcon } from 'lucide-vue-next';
 import { ref } from 'vue';
 import {
     Dialog,
@@ -7,7 +8,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { ImageIcon } from 'lucide-vue-next';
 
 const props = defineProps<{
     src: string | null;
@@ -19,7 +19,10 @@ const props = defineProps<{
 const open = ref(false);
 
 function handleClick() {
-    if (!props.src) return;
+    if (!props.src) {
+return;
+}
+
     open.value = true;
 }
 </script>

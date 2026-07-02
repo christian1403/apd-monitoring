@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class DetectionItem extends Model
 {
     protected $table = 'detection_items';
+
     protected $primaryKey = 'id';
+
     protected $fillable = [
         'item_id',
         'detection_id',

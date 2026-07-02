@@ -14,12 +14,14 @@ class StoreDetectionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'item_id'     => ['required', 'exists:items,id'],
-            'camera_id'   => ['required', 'exists:cameras,id'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.item_id' => ['required', 'exists:items,id'],
+            'items.*.status' => ['required', 'string', 'in:detected,undetected'],
+            'camera_id' => ['required', 'exists:cameras,id'],
             'location_id' => ['nullable', 'exists:locations,id'],
-            'status'      => ['required', 'string', 'in:safe,warning,unsafe'],
+            'status' => ['sometimes', 'string', 'in:safe,unsafe'],
             'detected_at' => ['nullable', 'date'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

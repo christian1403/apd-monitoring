@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { h, ref } from 'vue';
 import type { ColumnDef } from '@tanstack/vue-table';
+import { Plus } from 'lucide-vue-next';
+import type { AcceptableValue } from 'reka-ui';
+import { h, ref } from 'vue';
 import CameraController from '@/actions/App/Http/Controllers/CameraController';
-import { index } from '@/routes/camera';
 import ImagePreview from '@/components/ImagePreview.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -19,7 +21,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -28,13 +29,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Plus } from 'lucide-vue-next';
-import type { PaginatedData } from '@/types/pagination';
-import type { Camera, CameraFilters, CameraStatus } from '@/types/camera';
-import CameraActions from './CameraActions.vue';
-import type { AcceptableValue } from 'reka-ui';
-import type { Location } from '@/types/location';
 import { capitalizeFirstLetter } from '@/lib/utils';
+import { index } from '@/routes/camera';
+import type { Camera, CameraFilters, CameraStatus } from '@/types/camera';
+import type { Location } from '@/types/location';
+import type { PaginatedData } from '@/types/pagination';
+import CameraActions from './CameraActions.vue';
 
 const props = defineProps<{
     cameras: PaginatedData<Camera>;
@@ -104,7 +104,10 @@ function openEdit(camera: Camera) {
 }
 
 function submitEdit() {
-    if (!targetCamera.value) return;
+    if (!targetCamera.value) {
+return;
+}
+
     editForm.put(CameraController.update.url(targetCamera.value.id), {
         forceFormData: true,
         onSuccess: () => {
@@ -123,7 +126,10 @@ function openDelete(camera: Camera) {
 }
 
 function confirmDelete() {
-    if (!targetCamera.value) return;
+    if (!targetCamera.value) {
+return;
+}
+
     deleting.value = true;
     router.delete(CameraController.destroy.url(targetCamera.value.id), {
         onFinish: () => {

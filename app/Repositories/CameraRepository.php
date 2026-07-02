@@ -6,7 +6,8 @@ use App\Infrastructure\BaseRepository;
 use App\Models\Camera;
 use App\Repositories\Contracts\CameraRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use \Illuminate\Support\Collection;
+use Illuminate\Support\Collection;
+
 class CameraRepository extends BaseRepository implements CameraRepositoryInterface
 {
     public function __construct(Camera $model)
@@ -19,7 +20,7 @@ class CameraRepository extends BaseRepository implements CameraRepositoryInterfa
         string $sortBy = 'created_at',
         string $sortDir = 'desc',
         int $perPage = 10,
-        array $where = null
+        ?array $where = null
     ): LengthAwarePaginator {
         $query = $this->model->newQuery()->with('location');
 
@@ -34,7 +35,9 @@ class CameraRepository extends BaseRepository implements CameraRepositoryInterfa
             });
         }
 
-        if ($where) $query->where($where);
+        if ($where) {
+            $query->where($where);
+        }
 
         $this->applySorting($query, $sortBy, strtoupper($sortDir));
 
@@ -45,7 +48,7 @@ class CameraRepository extends BaseRepository implements CameraRepositoryInterfa
         string $search = '',
         string $sortBy = 'created_at',
         string $sortDir = 'desc',
-        array $where = null
+        ?array $where = null
     ): Collection {
         $query = $this->model->newQuery()->with('location');
 
@@ -60,7 +63,9 @@ class CameraRepository extends BaseRepository implements CameraRepositoryInterfa
             });
         }
 
-        if ($where) $query->where($where);
+        if ($where) {
+            $query->where($where);
+        }
 
         $this->applySorting($query, $sortBy, strtoupper($sortDir));
 

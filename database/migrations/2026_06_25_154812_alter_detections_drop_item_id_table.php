@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if(Schema::hasTable('detections')) {
+        if (Schema::hasTable('detections')) {
             Schema::table('detections', function (Blueprint $table) {
                 $table->dropForeign(['item_id']);
                 $table->dropColumn('item_id');
@@ -24,7 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if(Schema::hasTable('detections')) {
+        if (Schema::hasTable('detections')) {
             Schema::table('detections', function (Blueprint $table) {
                 $table->foreignId('item_id')
                     ->constrained('items')

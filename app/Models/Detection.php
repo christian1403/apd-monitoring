@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Services\FileService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Services\FileService;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Detection extends Model
 {
     protected $table = 'detections';
+
     protected $primaryKey = 'id';
+
     protected $fillable = [
-        'item_id',
         'camera_id',
         'location_id',
         'status',
@@ -19,17 +22,19 @@ class Detection extends Model
     ];
 
     protected $appends = ['image_url'];
+
     public function getImageUrlAttribute(): ?string
     {
         if ($this->image) {
             return app(FileService::class)->getUrl($this->image);
         }
+
         return null;
     }
 
-    public function item(): BelongsTo
+    public function detectionItems(): HasMany
     {
-        return $this->belongsTo(Item::class);
+        return $this->hasMany(DetectionItem::class);
     }
 
     public function camera(): BelongsTo

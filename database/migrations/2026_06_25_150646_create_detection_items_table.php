@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if(!Schema::hasTable('detection_items')) {
+        if (! Schema::hasTable('detection_items')) {
             Schema::create('detection_items', function (Blueprint $table) {
                 $table->id();
 
@@ -21,8 +21,8 @@ return new class extends Migration
                     ->constrained('detections')
                     ->cascadeOnUpdate()
                     ->cascadeOnDelete();
-                    
-                $table->string('status')->default('safe');
+
+                $table->string('status')->default('undetected');
                 $table->timestamps();
             });
         }

@@ -2,15 +2,15 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use App\Repositories\Contracts\ItemRepositoryInterface;
-use App\Repositories\ItemRepository;
-use App\Repositories\Contracts\LocationRepositoryInterface;
-use App\Repositories\LocationRepository;
-use App\Repositories\Contracts\CameraRepositoryInterface;
 use App\Repositories\CameraRepository;
+use App\Repositories\Contracts\CameraRepositoryInterface;
 use App\Repositories\Contracts\DetectionRepositoryInterface;
+use App\Repositories\Contracts\ItemRepositoryInterface;
+use App\Repositories\Contracts\LocationRepositoryInterface;
 use App\Repositories\DetectionRepository;
+use App\Repositories\ItemRepository;
+use App\Repositories\LocationRepository;
+use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
 {

@@ -2,15 +2,16 @@
 
 namespace App\Exports;
 
-use App\Models\Location;
+use app\Services\LocationService;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use app\Services\LocationService;
 
 class LocationsExport implements FromCollection, WithHeadings, WithMapping
 {
     protected LocationService $locationService;
+
     public function __construct(
         private readonly string $search = '',
         private readonly string $sortBy = 'created_at',
@@ -21,8 +22,8 @@ class LocationsExport implements FromCollection, WithHeadings, WithMapping
     }
 
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * @return Collection
+     */
     public function collection()
     {
         return $this->locationService->getExportData(
@@ -37,6 +38,7 @@ class LocationsExport implements FromCollection, WithHeadings, WithMapping
     {
         // increment counter for each row
         static $counter = 1;
+
         return [
             $counter++,
             $location->name,
@@ -46,7 +48,6 @@ class LocationsExport implements FromCollection, WithHeadings, WithMapping
             $location->longitude,
         ];
     }
-
 
     public function headings(): array
     {

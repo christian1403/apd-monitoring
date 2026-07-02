@@ -14,11 +14,11 @@ class StoreCameraRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => ['required', 'string', 'max:255'],
-            'ip_address'  => ['required', 'string', 'max:255', 'unique:cameras,ip_address'],
-            'status'      => ['required', 'string', 'in:active,inactive,maintenance'],
+            'name' => ['required', 'string', 'max:255'],
+            'ip_address' => ['required', 'string', 'max:255', 'unique:cameras,ip_address'],
+            'status' => ['required', 'string', 'in:active,inactive,maintenance'],
             'location_id' => ['required', 'exists:locations,id'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { dashboard } from '@/routes';
-import ApexChart from 'vue3-apexcharts';
 import { computed } from 'vue';
+import ApexChart from 'vue3-apexcharts';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
@@ -10,7 +10,7 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { dashboard } from '@/routes';
 
 defineOptions({
     layout: {
@@ -250,7 +250,10 @@ const chartOptions = {
                             class="group transition-colors hover:bg-muted/40"
                         >
                             <td class="p-4 pl-6 font-medium text-foreground">
-                                {{ detection.item?.name || '—' }}
+                                <span v-if="detection.detection_items?.length">
+                                    {{ detection.detection_items.map((di: any) => di.item?.name).filter(Boolean).join(', ') }}
+                                </span>
+                                <span v-else>—</span>
                             </td>
 
                             <td class="p-4 text-muted-foreground">

@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { h, ref } from 'vue';
 import type { ColumnDef } from '@tanstack/vue-table';
+import { Plus } from 'lucide-vue-next';
+import type { AcceptableValue } from 'reka-ui'
+import { h, ref } from 'vue';
 import ItemController from '@/actions/App/Http/Controllers/ItemController';
-import { index } from '@/routes/items';
 import ImagePreview from '@/components/ImagePreview.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+} from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import {
@@ -21,10 +26,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
-import {
     Select,
     SelectContent,
     SelectItem,
@@ -32,11 +33,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Plus } from 'lucide-vue-next';
-import type { DataTableFilters, PaginatedData } from '@/types/pagination';
+import { index } from '@/routes/items';
 import type { Item, ItemFilters } from '@/types/item';
+import type { DataTableFilters, PaginatedData } from '@/types/pagination';
 import ItemActions from './ItemActions.vue';
-import type { AcceptableValue } from 'reka-ui'
 
 const props = defineProps<{
     items: PaginatedData<Item>;
@@ -61,6 +61,7 @@ const targetItem = ref<Item | null>(null);
 
 const createForm = useForm({
     name: '',
+    code: '',
     description: '',
     image: null as File | null,
     is_active: true,
@@ -85,6 +86,7 @@ function submitCreate() {
 
 const editForm = useForm({
     name: '',
+    code: '',
     description: '',
     image: null as File | null,
     is_active: true,
@@ -93,6 +95,7 @@ const editForm = useForm({
 function openEdit(item: Item) {
     targetItem.value = item;
     editForm.name = item.name;
+    editForm.code = item.code;
     editForm.description = item.description ?? '';
     editForm.image = null;
     editForm.is_active = item.is_active;
@@ -100,7 +103,10 @@ function openEdit(item: Item) {
 }
 
 function submitEdit() {
-    if (!targetItem.value) return;
+    if (!targetItem.value) {
+return;
+}
+
     editForm.put(ItemController.update.url(targetItem.value.id), {
         forceFormData: true,
         onSuccess: () => {
@@ -119,7 +125,10 @@ function openDelete(item: Item) {
 }
 
 function confirmDelete() {
-    if (!targetItem.value) return;
+    if (!targetItem.value) {
+return;
+}
+
     deleting.value = true;
     router.delete(ItemController.destroy.url(targetItem.value.id), {
         onFinish: () => {
@@ -168,6 +177,12 @@ const columns: ColumnDef<Item>[] = [
         enableSorting: true,
         header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Name' }),
         cell: ({ row }) => h('span', { class: 'font-medium' }, row.original.name),
+    },
+    {
+        accessorKey: 'code',
+        enableSorting: true,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Code' }),
+        cell: ({ row }) => h('span', { class: 'font-mono text-sm text-muted-foreground' }, row.original.code),
     },
     {
         accessorKey: 'description',
@@ -281,6 +296,17 @@ const columns: ColumnDef<Item>[] = [
                 </div>
 
                 <div class="grid gap-1.5">
+                    <Label for="c-code">Code <span class="text-destructive">*</span></Label>
+                    <Input
+                        id="c-code"
+                        v-model="createForm.code"
+                        placeholder="e.g. masker, sarung_tangan"
+                        required
+                    />
+                    <InputError :message="createForm.errors.code" />
+                </div>
+
+                <div class="grid gap-1.5">
                     <Label for="c-desc">Description</Label>
                     <textarea
                         id="c-desc"
@@ -349,6 +375,17 @@ const columns: ColumnDef<Item>[] = [
                         required
                     />
                     <InputError :message="editForm.errors.name" />
+                </div>
+
+                <div class="grid gap-1.5">
+                    <Label for="e-code">Code <span class="text-destructive">*</span></Label>
+                    <Input
+                        id="e-code"
+                        v-model="editForm.code"
+                        placeholder="e.g. masker, sarung_tangan"
+                        required
+                    />
+                    <InputError :message="editForm.errors.code" />
                 </div>
 
                 <div class="grid gap-1.5">

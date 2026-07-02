@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Location;
+use Illuminate\Database\Seeder;
 
 class LocationsSeeder extends Seeder
 {
@@ -20,6 +19,6 @@ class LocationsSeeder extends Seeder
             ['name' => 'Produksi A', 'description' => 'Area produksi A', 'address' => 'Jl. Produksi No. 789, Kawasan Industri, Kota ABC', 'latitude' => -6.220000, 'longitude' => 106.836666],
         ];
         Location::insert($locations);
-        $this->command->info(count($locations) . ' locations seeded successfully!');
+        $this->command->info(count($locations).' locations seeded successfully!');
     }
 }

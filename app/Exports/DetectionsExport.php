@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Services\DetectionService;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -21,7 +22,7 @@ class DetectionsExport implements FromCollection, WithHeadings, WithMapping
     }
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function collection()
     {
@@ -39,7 +40,7 @@ class DetectionsExport implements FromCollection, WithHeadings, WithMapping
 
         return [
             $counter++,
-            $detection->item?->name ?? '-',
+            $detection->detectionItems->map(fn ($di) => $di->item?->name)->filter()->implode(', ') ?: '-',
             $detection->camera?->name ?? '-',
             $detection->camera?->ip_address ?? '-',
             $detection->location?->name ?? '-',

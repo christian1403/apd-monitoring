@@ -2,13 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Item;
-use App\Models\Location;
-use App\Models\Camera;
-use App\Models\Detection;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,6 +16,7 @@ class DatabaseSeeder extends Seeder
             LocationsSeeder::class,
             CamerasSeeder::class,
             DetectionsSeeder::class,
+            ApiClientSeeder::class,
         ]);
     }
 }

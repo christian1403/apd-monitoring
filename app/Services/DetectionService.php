@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Infrastructure\BaseService;
 use App\Models\Camera;
 use App\Models\Detection;
+use App\Models\DetectionItem;
 use App\Repositories\Contracts\DetectionRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -48,8 +49,26 @@ class DetectionService extends BaseService
             $data['image'] = $this->fileService->store($image, 'detections');
         }
 
+        $items = $data['items'] ?? [];
+        unset($data['items']);
+
+        // Auto-calculate detection status: all detected → safe, otherwise → unsafe
+        $data['status'] = collect($items)->every(fn ($item) => $item['status'] === 'detected')
+            ? 'safe'
+            : 'unsafe';
+
         /** @var Detection */
-        return $this->detectionRepository->save($data);
+        $detection = $this->detectionRepository->save($data);
+
+        foreach ($items as $item) {
+            DetectionItem::create([
+                'detection_id' => $detection->id,
+                'item_id' => $item['item_id'],
+                'status' => $item['status'],
+            ]);
+        }
+
+        return $detection;
     }
 
     public function updateDetection(int $id, array $data, ?UploadedFile $image = null): bool
@@ -75,7 +94,28 @@ class DetectionService extends BaseService
             $data['image'] = $this->fileService->store($image, 'detections');
         }
 
-        return $this->detectionRepository->update($id, $data);
+        $items = $data['items'] ?? [];
+        unset($data['items']);
+
+        // Auto-calculate detection status: all detected → safe, otherwise → unsafe
+        $data['status'] = collect($items)->every(fn ($item) => $item['status'] === 'detected')
+            ? 'safe'
+            : 'unsafe';
+
+        $result = $this->detectionRepository->update($id, $data);
+
+        // Sync detection items: delete old, create new
+        DetectionItem::where('detection_id', $id)->delete();
+
+        foreach ($items as $item) {
+            DetectionItem::create([
+                'detection_id' => $id,
+                'item_id' => $item['item_id'],
+                'status' => $item['status'],
+            ]);
+        }
+
+        return $result;
     }
 
     public function deleteDetection(int $id): bool

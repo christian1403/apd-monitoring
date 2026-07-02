@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { h, ref } from 'vue';
 import type { ColumnDef } from '@tanstack/vue-table';
+import { Plus } from 'lucide-vue-next';
+import type { AcceptableValue } from 'reka-ui';
+import { h, ref } from 'vue';
 import DetectionController from '@/actions/App/Http/Controllers/DetectionController';
-import { index } from '@/routes/detection';
 import ImagePreview from '@/components/ImagePreview.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -19,7 +21,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -28,15 +29,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Plus } from 'lucide-vue-next';
-import type { PaginatedData } from '@/types/pagination';
-import type { Detection, DetectionFilters, DetectionStatus } from '@/types/detection';
-import type { Item } from '@/types/item';
-import type { Camera } from '@/types/camera';
-import type { Location } from '@/types/location';
-import DetectionActions from './DetectionActions.vue';
-import type { AcceptableValue } from 'reka-ui';
 import { capitalizeFirstLetter } from '@/lib/utils';
+import { index } from '@/routes/detection';
+import type { Camera } from '@/types/camera';
+import type { Detection, DetectionFilters, DetectionStatus, DetectionItem } from '@/types/detection';
+import type { Item } from '@/types/item';
+import type { Location } from '@/types/location';
+import type { PaginatedData } from '@/types/pagination';
+import DetectionActions from './DetectionActions.vue';
 
 const props = defineProps<{
     detections: PaginatedData<Detection>;
@@ -62,18 +62,30 @@ const targetDetection = ref<Detection | null>(null);
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
+type ItemStatus = 'detected' | 'undetected';
+type DetectionItemForm = { item_id: number | ''; status: ItemStatus };
+
+const ITEM_STATUSES: ItemStatus[] = ['detected', 'undetected'];
+
 const createForm = useForm({
-    item_id: '' as number | '',
+    items: [{ item_id: '', status: 'undetected' as ItemStatus }] as DetectionItemForm[],
     camera_id: '' as number | '',
     location_id: '' as number | '',
-    status: 'safe' as Detection['status'],
     detected_at: '',
     image: null as File | null,
 });
 
+function addCreateItem() {
+    createForm.items.push({ item_id: '', status: 'undetected' });
+}
+
+function removeCreateItem(index: number) {
+    createForm.items.splice(index, 1);
+}
+
 function openCreate() {
     createForm.reset();
-    createForm.status = 'safe';
+    createForm.items = [{ item_id: '', status: 'undetected' }];
     showCreateDialog.value = true;
 }
 
@@ -83,7 +95,6 @@ function submitCreate() {
         onSuccess: () => {
             showCreateDialog.value = false;
             createForm.reset();
-            createForm.status = 'safe';
         },
     });
 }
@@ -91,27 +102,38 @@ function submitCreate() {
 // ─── Edit ─────────────────────────────────────────────────────────────────────
 
 const editForm = useForm({
-    item_id: '' as number | '',
+    items: [{ item_id: '', status: 'undetected' as ItemStatus }] as DetectionItemForm[],
     camera_id: '' as number | '',
     location_id: '' as number | '',
-    status: 'safe' as Detection['status'],
     detected_at: '',
     image: null as File | null,
 });
 
+function addEditItem() {
+    editForm.items.push({ item_id: '', status: 'undetected' });
+}
+
+function removeEditItem(index: number) {
+    editForm.items.splice(index, 1);
+}
+
 function openEdit(detection: Detection) {
     targetDetection.value = detection;
-    editForm.item_id = detection.item_id ?? '';
+    editForm.items = detection.detection_items.length > 0
+        ? detection.detection_items.map((di: DetectionItem) => ({ item_id: di.item_id, status: di.status as ItemStatus }))
+        : [{ item_id: '', status: 'undetected' }];
     editForm.camera_id = detection.camera_id ?? '';
     editForm.location_id = detection.location_id ?? '';
-    editForm.status = detection.status;
     editForm.detected_at = detection.detected_at ? detection.detected_at.substring(0, 16) : '';
     editForm.image = null;
     showEditDialog.value = true;
 }
 
 function submitEdit() {
-    if (!targetDetection.value) return;
+    if (!targetDetection.value) {
+return;
+}
+
     editForm.put(DetectionController.update.url(targetDetection.value.id), {
         forceFormData: true,
         onSuccess: () => {
@@ -130,7 +152,10 @@ function openDelete(detection: Detection) {
 }
 
 function confirmDelete() {
-    if (!targetDetection.value) return;
+    if (!targetDetection.value) {
+return;
+}
+
     deleting.value = true;
     router.delete(DetectionController.destroy.url(targetDetection.value.id), {
         onFinish: () => {
@@ -177,15 +202,26 @@ const columns: ColumnDef<Detection>[] = [
         cell: ({ row }) =>
             h(ImagePreview, {
                 src: row.original.image_url,
-                alt: row.original.item?.name ?? 'detection',
-                title: row.original.item?.name,
+                alt: `detection #${row.original.id}`,
+                title: `detection #${row.original.id}`,
             }),
     },
     {
-        id: 'item',
-        header: 'Item',
-        cell: ({ row }) =>
-            h('span', { class: 'font-medium' }, row.original.item?.name ?? '—'),
+        id: 'items',
+        header: 'Items',
+        cell: ({ row }) => {
+            const items = row.original.detection_items ?? [];
+
+            if (items.length === 0) {
+return h('span', { class: 'text-muted-foreground' }, '—');
+}
+
+            return h('div', { class: 'flex flex-wrap gap-1' },
+                items.map((di: DetectionItem) =>
+                    h(Badge, { variant: 'outline', class: 'text-xs' }, () => di.item?.name ?? '—'),
+                ),
+            );
+        },
     },
     {
         id: 'camera',
@@ -295,19 +331,51 @@ const columns: ColumnDef<Detection>[] = [
             </DialogHeader>
 
             <form class="space-y-4" @submit.prevent="submitCreate">
-                <div class="grid gap-1.5">
-                    <Label for="c-item">Item APD <span class="text-destructive">*</span></Label>
-                    <Select v-model="createForm.item_id">
-                        <SelectTrigger id="c-item" class="w-full">
-                            <SelectValue placeholder="Select item" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem v-for="item in items" :key="item.id" :value="item.id">
-                                {{ item.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="createForm.errors.item_id" />
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <Label>Item APD <span class="text-destructive">*</span></Label>
+                        <Button type="button" variant="outline" size="sm" @click="addCreateItem">
+                            <Plus class="size-3" />
+                            Add Item
+                        </Button>
+                    </div>
+                    <div v-for="(item, idx) in createForm.items" :key="idx" class="flex items-end gap-2">
+                        <div class="grid flex-1 gap-1.5">
+                            <Label v-if="idx === 0" class="text-xs text-muted-foreground">Item</Label>
+                            <Select v-model="item.item_id">
+                                <SelectTrigger class="w-full">
+                                    <SelectValue placeholder="Select item" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="opt in items" :key="opt.id" :value="opt.id">
+                                        {{ opt.name }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="grid w-32 gap-1.5">
+                            <Label v-if="idx === 0" class="text-xs text-muted-foreground">Status</Label>
+                            <Select v-model="item.status">
+                                <SelectTrigger class="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="status in ITEM_STATUSES" :key="status" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button
+                            v-if="createForm.items.length > 1"
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            class="text-destructive"
+                            @click="removeCreateItem(idx)"
+                        >
+                            ✕
+                        </Button>
+                    </div>
+                    <InputError :message="createForm.errors.items" />
                 </div>
 
                 <div class="grid gap-1.5">
@@ -338,19 +406,6 @@ const columns: ColumnDef<Detection>[] = [
                         </SelectContent>
                     </Select>
                     <InputError :message="createForm.errors.location_id" />
-                </div>
-
-                <div class="grid gap-1.5">
-                    <Label for="c-status">Status <span class="text-destructive">*</span></Label>
-                    <Select v-model="createForm.status">
-                        <SelectTrigger id="c-status" class="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem v-for="status in statuses" :key="status" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="createForm.errors.status" />
                 </div>
 
                 <div class="grid gap-1.5">
@@ -389,25 +444,56 @@ const columns: ColumnDef<Detection>[] = [
             <DialogHeader>
                 <DialogTitle>Edit Detection</DialogTitle>
                 <DialogDescription>
-                    Updating detection for
-                    <strong>{{ targetDetection?.item?.name }}</strong>.
+                    Updating detection #{{ targetDetection?.id }}.
                 </DialogDescription>
             </DialogHeader>
 
             <form class="space-y-4" @submit.prevent="submitEdit">
-                <div class="grid gap-1.5">
-                    <Label for="e-item">Item APD <span class="text-destructive">*</span></Label>
-                    <Select v-model="editForm.item_id">
-                        <SelectTrigger id="e-item" class="w-full">
-                            <SelectValue placeholder="Select item" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem v-for="item in items" :key="item.id" :value="item.id">
-                                {{ item.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="editForm.errors.item_id" />
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <Label>Item APD <span class="text-destructive">*</span></Label>
+                        <Button type="button" variant="outline" size="sm" @click="addEditItem">
+                            <Plus class="size-3" />
+                            Add Item
+                        </Button>
+                    </div>
+                    <div v-for="(item, idx) in editForm.items" :key="idx" class="flex items-end gap-2">
+                        <div class="grid flex-1 gap-1.5">
+                            <Label v-if="idx === 0" class="text-xs text-muted-foreground">Item</Label>
+                            <Select v-model="item.item_id">
+                                <SelectTrigger class="w-full">
+                                    <SelectValue placeholder="Select item" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="opt in items" :key="opt.id" :value="opt.id">
+                                        {{ opt.name }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="grid w-32 gap-1.5">
+                            <Label v-if="idx === 0" class="text-xs text-muted-foreground">Status</Label>
+                            <Select v-model="item.status">
+                                <SelectTrigger class="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="status in ITEM_STATUSES" :key="status" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button
+                            v-if="editForm.items.length > 1"
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            class="text-destructive"
+                            @click="removeEditItem(idx)"
+                        >
+                            ✕
+                        </Button>
+                    </div>
+                    <InputError :message="editForm.errors.items" />
                 </div>
 
                 <div class="grid gap-1.5">
@@ -441,19 +527,6 @@ const columns: ColumnDef<Detection>[] = [
                 </div>
 
                 <div class="grid gap-1.5">
-                    <Label for="e-status">Status <span class="text-destructive">*</span></Label>
-                    <Select v-model="editForm.status">
-                        <SelectTrigger id="e-status" class="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="editForm.errors.status" />
-                </div>
-
-                <div class="grid gap-1.5">
                     <Label for="e-detected-at">Detected At</Label>
                     <Input id="e-detected-at" v-model="editForm.detected_at" type="datetime-local" />
                     <InputError :message="editForm.errors.detected_at" />
@@ -464,8 +537,8 @@ const columns: ColumnDef<Detection>[] = [
                     <ImagePreview
                         v-if="targetDetection?.image_url"
                         :src="targetDetection.image_url"
-                        :alt="targetDetection.item?.name ?? 'detection'"
-                        :title="targetDetection.item?.name"
+                        :alt="`detection #${targetDetection?.id}`"
+                        :title="`detection #${targetDetection?.id}`"
                     />
                     <p v-if="targetDetection?.image" class="text-xs text-muted-foreground">
                         A new upload will replace the existing image.
