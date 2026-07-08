@@ -235,4 +235,12 @@
         color: #F39C12 !important;
         border: 1px solid #F39C12 !important;
     }
+    /* Hide scrollbar (utility) */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
 }
