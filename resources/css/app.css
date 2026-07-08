@@ -9,13 +9,16 @@
 
 @theme inline {
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        'Amazon Ember', 'Helvetica Neue', Helvetica, Arial, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+    --font-mono:
+        'Amazon Ember Mono', 'SF Mono', SFMono-Regular, ui-monospace,
+        Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 
     --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: var(--radius);
+    --radius-sm: calc(var(--radius) - 2px);
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -83,83 +86,93 @@
     body,
     html {
         --font-sans:
-            'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+            'Amazon Ember', 'Helvetica Neue', Helvetica, Arial, sans-serif,
             'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
             'Noto Color Emoji';
     }
 }
 
 :root {
-    --background: hsl(0 0% 100%);
-    --foreground: hsl(0 0% 3.9%);
-    --card: hsl(0 0% 100%);
-    --card-foreground: hsl(0 0% 3.9%);
-    --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(0 0% 3.9%);
-    --primary: hsl(0 0% 9%);
-    --primary-foreground: hsl(0 0% 98%);
-    --secondary: hsl(0 0% 92.1%);
-    --secondary-foreground: hsl(0 0% 9%);
-    --muted: hsl(0 0% 96.1%);
-    --muted-foreground: hsl(0 0% 45.1%);
-    --accent: hsl(0 0% 96.1%);
-    --accent-foreground: hsl(0 0% 9%);
-    --destructive: hsl(0 84.2% 60.2%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 92.8%);
-    --input: hsl(0 0% 89.8%);
-    --ring: hsl(0 0% 3.9%);
-    --chart-1: hsl(12 76% 61%);
-    --chart-2: hsl(173 58% 39%);
-    --chart-3: hsl(197 37% 24%);
-    --chart-4: hsl(43 74% 66%);
-    --chart-5: hsl(27 87% 67%);
-    --radius: 0.5rem;
-    --sidebar-background: hsl(0 0% 98%);
-    --sidebar-foreground: hsl(240 5.3% 26.1%);
-    --sidebar-primary: hsl(0 0% 10%);
-    --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(0 0% 94%);
-    --sidebar-accent-foreground: hsl(0 0% 30%);
-    --sidebar-border: hsl(0 0% 91%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(0 0% 98%);
+    /* AWS Palette - Light Canvas */
+    --background: #F2F3F3;
+    --foreground: #16191F;
+    --card: #FFFFFF;
+    --card-foreground: #16191F;
+    --popover: #FFFFFF;
+    --popover-foreground: #16191F;
+    /* AWS Orange */
+    --primary: #FF9900;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F2F3F3;
+    --secondary-foreground: #16191F;
+    --muted: #F2F3F3;
+    --muted-foreground: #545B64;
+    --accent: #F2F3F3;
+    --accent-foreground: #16191F;
+    /* AWS Red */
+    --destructive: #E74C3C;
+    --destructive-foreground: #FFFFFF;
+    --border: #D5DBDB;
+    --input: #D5DBDB;
+    --ring: #FF9900;
+    /* AWS Status Colors */
+    --chart-1: #1D8348;
+    --chart-2: #F39C12;
+    --chart-3: #E74C3C;
+    --chart-4: #3498DB;
+    --chart-5: #FF9900;
+    /* AWS Radius: 4px */
+    --radius: 0.25rem;
+    /* AWS Dark Navy Sidebar */
+    --sidebar-background: #232F3E;
+    --sidebar-foreground: #FFFFFF;
+    --sidebar-primary: #FF9900;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #2d3d50;
+    --sidebar-accent-foreground: #FFFFFF;
+    --sidebar-border: #374556;
+    --sidebar-ring: #FF9900;
+    --sidebar: #232F3E;
 }
 
 .dark {
-    --background: hsl(0 0% 3.9%);
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(0 0% 3.9%);
-    --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(0 0% 3.9%);
-    --popover-foreground: hsl(0 0% 98%);
-    --primary: hsl(0 0% 98%);
-    --primary-foreground: hsl(0 0% 9%);
-    --secondary: hsl(0 0% 14.9%);
-    --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(0 0% 16.08%);
-    --muted-foreground: hsl(0 0% 63.9%);
-    --accent: hsl(0 0% 14.9%);
-    --accent-foreground: hsl(0 0% 98%);
-    --destructive: hsl(0 84% 60%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 14.9%);
-    --input: hsl(0 0% 14.9%);
-    --ring: hsl(0 0% 83.1%);
-    --chart-1: hsl(220 70% 50%);
-    --chart-2: hsl(160 60% 45%);
-    --chart-3: hsl(30 80% 55%);
-    --chart-4: hsl(280 65% 60%);
-    --chart-5: hsl(340 75% 55%);
-    --sidebar-background: hsl(0 0% 7%);
-    --sidebar-foreground: hsl(0 0% 95.9%);
-    --sidebar-primary: hsl(360, 100%, 100%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(0 0% 15.9%);
-    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-    --sidebar-border: hsl(0 0% 15.9%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(240 5.9% 10%);
+    /* AWS Palette - Dark Canvas */
+    --background: #131920;
+    --foreground: #FFFFFF;
+    --card: #1a2028;
+    --card-foreground: #FFFFFF;
+    --popover: #1a2028;
+    --popover-foreground: #FFFFFF;
+    /* AWS Orange (unchanged) */
+    --primary: #FF9900;
+    --primary-foreground: #FFFFFF;
+    --secondary: #232F3E;
+    --secondary-foreground: #FFFFFF;
+    --muted: #232F3E;
+    --muted-foreground: #8D9699;
+    --accent: #232F3E;
+    --accent-foreground: #FFFFFF;
+    --destructive: #E74C3C;
+    --destructive-foreground: #FFFFFF;
+    --border: #374556;
+    --input: #374556;
+    --ring: #FF9900;
+    /* AWS Status Colors (unchanged) */
+    --chart-1: #1D8348;
+    --chart-2: #F39C12;
+    --chart-3: #E74C3C;
+    --chart-4: #3498DB;
+    --chart-5: #FF9900;
+    /* AWS Dark Navy Sidebar (unchanged) */
+    --sidebar-background: #232F3E;
+    --sidebar-foreground: #FFFFFF;
+    --sidebar-primary: #FF9900;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #2d3d50;
+    --sidebar-accent-foreground: #FFFFFF;
+    --sidebar-border: #374556;
+    --sidebar-ring: #FF9900;
+    --sidebar: #232F3E;
 }
 
 @layer base {
@@ -168,5 +181,58 @@
     }
     body {
         @apply bg-background text-foreground;
+        font-family: 'Amazon Ember', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+    /* AWS: 13px base type, dense tables */
+    table {
+        font-size: 13px;
+    }
+    /* AWS: orange focus ring on dark sidebar, blue on white surfaces */
+    .dark *:focus-visible,
+    [data-sidebar] *:focus-visible {
+        outline: 2px solid #FF9900;
+        outline-offset: 2px;
+    }
+    :not(.dark) *:focus-visible {
+        outline: 2px solid #0073BB;
+        outline-offset: 2px;
+    }
+    /* AWS: active sidebar item orange left border + accent bg */
+    [data-sidebar="menu-button"][data-active="true"] {
+        border-left: 3px solid #FF9900;
+        background-color: #2d3d50 !important;
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }
+    /* AWS: compact table rows (36px) */
+    table tbody tr {
+        height: 36px;
+    }
+    table thead tr {
+        height: 36px;
+    }
+    /* AWS: status badge overrides (outline style) */
+    span.bg-emerald-500,
+    span.bg-red-500,
+    span.bg-amber-500 {
+        background-color: transparent !important;
+        border-radius: 2px !important;
+        font-weight: 600 !important;
+        padding: 2px 6px !important;
+    }
+    span.bg-emerald-500 {
+        color: #1D8348 !important;
+        border: 1px solid #1D8348 !important;
+    }
+    span.bg-red-500 {
+        color: #E74C3C !important;
+        border: 1px solid #E74C3C !important;
+    }
+    span.bg-amber-500 {
+        color: #F39C12 !important;
+        border: 1px solid #F39C12 !important;
     }
 }
