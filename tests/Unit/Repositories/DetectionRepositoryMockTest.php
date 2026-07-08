@@ -5,11 +5,20 @@ namespace Tests\Unit\Repositories;
 use App\Models\Detection;
 use App\Repositories\DetectionRepository;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Mockery;
+use Tests\TestCase;
 
-class DetectionRepositoryMockTest extends RepositoryMockTestCase
+class DetectionRepositoryMockTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+
+        parent::tearDown();
+    }
+
     public function test_detection_repository_get_data_uses_mock_query_builder(): void
     {
         $model = Mockery::mock(Detection::class);
@@ -43,7 +52,7 @@ class DetectionRepositoryMockTest extends RepositoryMockTestCase
         $query = Mockery::mock(Builder::class);
 
         $collection = collect([
-            (new Detection())->forceFill(['status' => 'complete']),
+            new Detection(['status' => 'complete']),
         ]);
 
         $model
@@ -101,8 +110,8 @@ class DetectionRepositoryMockTest extends RepositoryMockTestCase
         $query = Mockery::mock(Builder::class);
 
         $collection = collect([
-            (new Detection())->forceFill(['status' => 'complete']),
-            (new Detection())->forceFill(['status' => 'pending']),
+            new Detection(['status' => 'complete']),
+            new Detection(['status' => 'pending']),
         ]);
 
         $model
@@ -139,5 +148,36 @@ class DetectionRepositoryMockTest extends RepositoryMockTestCase
         $this->assertInstanceOf(Collection::class, $result);
         $this->assertSame($collection, $result);
         $this->assertCount(2, $result);
+    }
+
+    private function emptyPaginator(int $perPage = 10): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(
+            collect(),
+            0,
+            $perPage,
+            1
+        );
+    }
+
+    private function expectPagination($query, LengthAwarePaginator $paginator): void
+    {
+        $query
+            ->shouldReceive('paginate')
+            ->once()
+            ->withAnyArgs()
+            ->andReturn($paginator);
+    }
+
+    private function expectSorting($query, string $sortBy, string $sortDir): void
+    {
+        $query
+            ->shouldReceive('orderBy')
+            ->once()
+            ->with(
+                $sortBy,
+                Mockery::on(fn ($direction) => strtoupper((string) $direction) === strtoupper($sortDir))
+            )
+            ->andReturnSelf();
     }
 }

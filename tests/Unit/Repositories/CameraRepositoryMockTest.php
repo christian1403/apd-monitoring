@@ -5,11 +5,20 @@ namespace Tests\Unit\Repositories;
 use App\Models\Camera;
 use App\Repositories\CameraRepository;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Mockery;
+use Tests\TestCase;
 
-class CameraRepositoryMockTest extends RepositoryMockTestCase
+class CameraRepositoryMockTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+
+        parent::tearDown();
+    }
+
     public function test_camera_repository_get_data_uses_mock_query_builder(): void
     {
         $model = Mockery::mock(Camera::class);
@@ -43,7 +52,7 @@ class CameraRepositoryMockTest extends RepositoryMockTestCase
         $query = Mockery::mock(Builder::class);
 
         $collection = collect([
-            (new Camera())->forceFill(['name' => 'Camera 1']),
+            new Camera(['name' => 'Camera 1']),
         ]);
 
         $model
@@ -70,5 +79,36 @@ class CameraRepositoryMockTest extends RepositoryMockTestCase
 
         $this->assertInstanceOf(Collection::class, $result);
         $this->assertSame($collection, $result);
+    }
+
+    private function emptyPaginator(int $perPage = 10): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(
+            collect(),
+            0,
+            $perPage,
+            1
+        );
+    }
+
+    private function expectPagination($query, LengthAwarePaginator $paginator): void
+    {
+        $query
+            ->shouldReceive('paginate')
+            ->once()
+            ->withAnyArgs()
+            ->andReturn($paginator);
+    }
+
+    private function expectSorting($query, string $sortBy, string $sortDir): void
+    {
+        $query
+            ->shouldReceive('orderBy')
+            ->once()
+            ->with(
+                $sortBy,
+                Mockery::on(fn ($direction) => strtoupper((string) $direction) === strtoupper($sortDir))
+            )
+            ->andReturnSelf();
     }
 }

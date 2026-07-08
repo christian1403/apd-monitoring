@@ -5,11 +5,20 @@ namespace Tests\Unit\Repositories;
 use App\Models\Location;
 use App\Repositories\LocationRepository;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Mockery;
+use Tests\TestCase;
 
-class LocationRepositoryMockTest extends RepositoryMockTestCase
+class LocationRepositoryMockTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+
+        parent::tearDown();
+    }
+
     public function test_location_repository_get_data_uses_mock_query_builder(): void
     {
         $model = Mockery::mock(Location::class);
@@ -37,7 +46,7 @@ class LocationRepositoryMockTest extends RepositoryMockTestCase
         $query = Mockery::mock(Builder::class);
 
         $collection = collect([
-            (new Location())->forceFill(['name' => 'Gudang Utama']),
+            new Location(['name' => 'Gudang Utama']),
         ]);
 
         $model
@@ -58,5 +67,36 @@ class LocationRepositoryMockTest extends RepositoryMockTestCase
 
         $this->assertInstanceOf(Collection::class, $result);
         $this->assertSame($collection, $result);
+    }
+
+    private function emptyPaginator(int $perPage = 10): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(
+            collect(),
+            0,
+            $perPage,
+            1
+        );
+    }
+
+    private function expectPagination($query, LengthAwarePaginator $paginator): void
+    {
+        $query
+            ->shouldReceive('paginate')
+            ->once()
+            ->withAnyArgs()
+            ->andReturn($paginator);
+    }
+
+    private function expectSorting($query, string $sortBy, string $sortDir): void
+    {
+        $query
+            ->shouldReceive('orderBy')
+            ->once()
+            ->with(
+                $sortBy,
+                Mockery::on(fn ($direction) => strtoupper((string) $direction) === strtoupper($sortDir))
+            )
+            ->andReturnSelf();
     }
 }
