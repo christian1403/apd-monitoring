@@ -27,8 +27,7 @@ import { Label } from '@/components/ui/label';
 
 import { Spinner } from '@/components/ui/spinner';
 import { index } from '@/routes/location';
-
-
+import MapPicker from '@/components/MapPicker.vue';
 
 import type { Location } from '@/types/location';
 import type { DataTableFilters, PaginatedData } from '@/types/pagination';
@@ -317,7 +316,7 @@ const columns: ColumnDef<Location>[] = [
 
     <!-- Create Dialog -->
     <Dialog v-model:open="showCreateDialog">
-        <DialogContent class="sm:max-w-md">
+        <DialogContent class="sm:max-w-2xl flex max-h-[80vh] flex-col">
             <DialogHeader>
                 <DialogTitle>Add Location</DialogTitle>
 
@@ -326,83 +325,106 @@ const columns: ColumnDef<Location>[] = [
                 </DialogDescription>
             </DialogHeader>
 
-            <form class="space-y-4" @submit.prevent="submitCreate">
-                <div class="grid gap-1.5">
-                    <Label>Name</Label>
-
-                    <Input
-                        v-model="createForm.name"
-                        placeholder="Location name"
-                    />
-
-                    <InputError :message="createForm.errors.name" />
-                </div>
-
-                <div class="grid gap-1.5">
-                    <Label>Description</Label>
-
-                    <textarea
-                        v-model="createForm.description"
-                        rows="3"
-                        class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    />
-
-                    <InputError :message="createForm.errors.description" />
-                </div>
-
-                <div class="grid gap-1.5">
-                    <Label>Address</Label>
-
-                    <Input v-model="createForm.address" placeholder="Address" />
-
-                    <InputError :message="createForm.errors.address" />
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
+            <div class="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto px-0.5">
+                <form id="create-location-form" class="flex flex-1 flex-col gap-4" @submit.prevent="submitCreate">
                     <div class="grid gap-1.5">
-                        <Label>Latitude</Label>
+                        <Label>Name</Label>
 
                         <Input
-                            v-model="createForm.latitude"
-                            placeholder="-7.2575"
+                            v-model="createForm.name"
+                            placeholder="Location name"
                         />
+
+                        <InputError :message="createForm.errors.name" />
                     </div>
 
                     <div class="grid gap-1.5">
-                        <Label>Longitude</Label>
+                        <Label>Description</Label>
 
-                        <Input
-                            v-model="createForm.longitude"
-                            placeholder="112.7521"
+                        <textarea
+                            v-model="createForm.description"
+                            rows="3"
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+
+                        <InputError :message="createForm.errors.description" />
+                    </div>
+
+                    <div class="grid gap-1.5">
+                        <Label>Address</Label>
+
+                        <Input v-model="createForm.address" placeholder="Address" />
+
+                        <InputError :message="createForm.errors.address" />
+                    </div>
+
+                    <div class="grid gap-1.5">
+                        <Label>Pick on Map</Label>
+
+                        <MapPicker
+                            :model-value="
+                                createForm.latitude && createForm.longitude
+                                    ? {
+                                          lat: parseFloat(createForm.latitude),
+                                          lng: parseFloat(createForm.longitude),
+                                      }
+                                    : undefined
+                            "
+                            @update:model-value="
+                                (pos) => {
+                                    createForm.latitude = pos.lat.toString();
+                                    createForm.longitude = pos.lng.toString();
+                                }
+                            "
                         />
                     </div>
-                </div>
 
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        @click="showCreateDialog = false"
-                    >
-                        Cancel
-                    </Button>
+                    <div class="grid grid-cols-2 gap-3 pb-4">
+                        <div class="grid gap-1.5">
+                            <Label>Latitude</Label>
 
-                    <Button type="submit" :disabled="createForm.processing">
-                        <Spinner
-                            v-if="createForm.processing"
-                            class="mr-2 size-4"
-                        />
+                            <Input
+                                v-model="createForm.latitude"
+                                placeholder="-7.2575"
+                            />
+                        </div>
 
-                        Save
-                    </Button>
-                </DialogFooter>
-            </form>
+                        <div class="grid gap-1.5">
+                            <Label>Longitude</Label>
+
+                            <Input
+                                v-model="createForm.longitude"
+                                placeholder="112.7521"
+                            />
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="showCreateDialog = false"
+                >
+                    Cancel
+                </Button>
+
+                <Button type="submit" form="create-location-form" :disabled="createForm.processing">
+                    <Spinner
+                        v-if="createForm.processing"
+                        class="mr-2 size-4"
+                    />
+
+                    Save
+                </Button>
+            </DialogFooter>
         </DialogContent>
     </Dialog>
 
     <!-- Edit Dialog -->
     <Dialog v-model:open="showEditDialog">
-        <DialogContent class="sm:max-w-md">
+        <DialogContent class="sm:max-w-xl flex max-h-[80vh] flex-col">
             <DialogHeader>
                 <DialogTitle>Edit Location</DialogTitle>
 
@@ -411,66 +433,89 @@ const columns: ColumnDef<Location>[] = [
                 </DialogDescription>
             </DialogHeader>
 
-            <form class="space-y-4" @submit.prevent="submitEdit">
-                <div class="grid gap-1.5">
-                    <Label>Name</Label>
-
-                    <Input v-model="editForm.name" />
-
-                    <InputError :message="editForm.errors.name" />
-                </div>
-
-                <div class="grid gap-1.5">
-                    <Label>Description</Label>
-
-                    <textarea
-                        v-model="editForm.description"
-                        rows="3"
-                        class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    />
-
-                    <InputError :message="editForm.errors.description" />
-                </div>
-
-                <div class="grid gap-1.5">
-                    <Label>Address</Label>
-
-                    <Input v-model="editForm.address" />
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
+            <div class="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto px-0.5">
+                <form id="edit-location-form" class="flex flex-1 flex-col gap-4" @submit.prevent="submitEdit">
                     <div class="grid gap-1.5">
-                        <Label>Latitude</Label>
+                        <Label>Name</Label>
 
-                        <Input v-model="editForm.latitude" />
+                        <Input v-model="editForm.name" />
+
+                        <InputError :message="editForm.errors.name" />
                     </div>
 
                     <div class="grid gap-1.5">
-                        <Label>Longitude</Label>
+                        <Label>Description</Label>
 
-                        <Input v-model="editForm.longitude" />
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        @click="showEditDialog = false"
-                    >
-                        Cancel
-                    </Button>
-
-                    <Button type="submit" :disabled="editForm.processing">
-                        <Spinner
-                            v-if="editForm.processing"
-                            class="mr-2 size-4"
+                        <textarea
+                            v-model="editForm.description"
+                            rows="3"
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         />
 
-                        Update
-                    </Button>
-                </DialogFooter>
-            </form>
+                        <InputError :message="editForm.errors.description" />
+                    </div>
+
+                    <div class="grid gap-1.5">
+                        <Label>Address</Label>
+
+                        <Input v-model="editForm.address" />
+                    </div>
+
+                    <div class="grid gap-1.5">
+                        <Label>Pick on Map</Label>
+
+                        <MapPicker
+                            :model-value="
+                                editForm.latitude && editForm.longitude
+                                    ? {
+                                          lat: parseFloat(editForm.latitude),
+                                          lng: parseFloat(editForm.longitude),
+                                      }
+                                    : undefined
+                            "
+                            @update:model-value="
+                                (pos) => {
+                                    editForm.latitude = pos.lat.toString();
+                                    editForm.longitude = pos.lng.toString();
+                                }
+                            "
+                        />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pb-4">
+                        <div class="grid gap-1.5">
+                            <Label>Latitude</Label>
+
+                            <Input v-model="editForm.latitude" />
+                        </div>
+
+                        <div class="grid gap-1.5">
+                            <Label>Longitude</Label>
+
+                            <Input v-model="editForm.longitude" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="showEditDialog = false"
+                >
+                    Cancel
+                </Button>
+
+                <Button type="submit" form="edit-location-form" :disabled="editForm.processing">
+                    <Spinner
+                        v-if="editForm.processing"
+                        class="mr-2 size-4"
+                    />
+
+                    Update
+                </Button>
+            </DialogFooter>
         </DialogContent>
     </Dialog>
 
