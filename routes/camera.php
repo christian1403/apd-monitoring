@@ -12,4 +12,5 @@ Route::middleware(['auth', 'verified'])
         Route::put('/{camera}', [CameraController::class, 'update'])->name('update');
         Route::delete('/{camera}', [CameraController::class, 'destroy'])->name('destroy');
         Route::get('/export/{format}', [CameraController::class, 'export'])->name('export');
+        Route::get('/{camera}/stream', [CameraController::class, 'stream'])->name('stream');
     });

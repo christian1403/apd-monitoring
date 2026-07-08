@@ -18,6 +18,7 @@ class StoreCameraRequest extends FormRequest
             'ip_address' => ['required', 'string', 'max:255', 'unique:cameras,ip_address'],
             'status' => ['required', 'string', 'in:active,inactive,maintenance'],
             'location_id' => ['required', 'exists:locations,id'],
+            'rtsp_url' => ['nullable', 'string', 'max:255', 'url'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }

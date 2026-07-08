@@ -9,6 +9,7 @@ use App\Http\Requests\Cameras\UpdateCameraRequest;
 use App\Models\Camera;
 use App\Models\Location;
 use App\Services\CameraService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -112,5 +113,31 @@ class CameraController extends Controller
             new CamerasExport($search, $sortBy, $sortDir, $where),
             'cameras.'.$format,
         );
+    }
+
+    public function stream(Camera $camera): JsonResponse
+    {
+        if (! $camera->rtsp_url) {
+            return response()->json([
+                'error' => 'Camera does not have an RTSP URL configured.',
+            ], 404);
+        }
+
+        $proxyUrl = null;
+        if (config('services.rtsp_proxy.enabled', false)) {
+            $path = trim((string) parse_url($camera->rtsp_url, PHP_URL_PATH), '/');
+            $proxyUrl = $path
+                ? config('services.rtsp_proxy.base_url').'/'.$path.'/index.m3u8'
+                : null;
+        }
+
+        return response()->json([
+            'camera_id' => $camera->id,
+            'camera_name' => $camera->name,
+            'rtsp_url' => $camera->rtsp_url,
+            'stream_type' => str_starts_with($camera->rtsp_url, 'rtsp://') ? 'rtsp' : 'hls',
+            'proxy_available' => $proxyUrl !== null,
+            'proxy_url' => $proxyUrl,
+        ]);
     }
 }

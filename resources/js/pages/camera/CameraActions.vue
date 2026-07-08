@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-vue-next';
+import { MoreHorizontal, Pencil, Trash2, Play } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -13,6 +13,7 @@ import type { Camera } from '@/types/camera';
 const props = defineProps<{ camera: Camera }>();
 
 const emit = defineEmits<{
+    (e: 'preview', camera: Camera): void;
     (e: 'edit', camera: Camera): void;
     (e: 'delete', camera: Camera): void;
 }>();
@@ -27,6 +28,11 @@ const emit = defineEmits<{
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+            <DropdownMenuItem v-if="camera.rtsp_url" @click="emit('preview', props.camera)">
+                <Play />
+                Preview
+            </DropdownMenuItem>
+            <DropdownMenuSeparator v-if="camera.rtsp_url" />
             <DropdownMenuItem @click="emit('edit', props.camera)">
                 <Pencil />
                 Edit

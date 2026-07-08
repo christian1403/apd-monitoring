@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'rtsp_proxy' => [
+        'enabled' => env('RTSP_PROXY_ENABLED', false),
+        'base_url' => env('RTSP_PROXY_URL', 'http://localhost:8888'),
+    ],
+
 ];

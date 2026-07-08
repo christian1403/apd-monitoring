@@ -7,6 +7,7 @@ import { h, ref } from 'vue';
 import CameraController from '@/actions/App/Http/Controllers/CameraController';
 import ImagePreview from '@/components/ImagePreview.vue';
 import InputError from '@/components/InputError.vue';
+import RtspPreview from '@/components/RtspPreview.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,6 +55,7 @@ defineOptions({
 const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
+const showPreviewDialog = ref(false);
 const targetCamera = ref<Camera | null>(null);
 
 // ─── Create ───────────────────────────────────────────────────────────────────
@@ -61,6 +63,7 @@ const targetCamera = ref<Camera | null>(null);
 const createForm = useForm({
     name: '',
     ip_address: '',
+    rtsp_url: '',
     status: 'active' as Camera['status'],
     location_id: '' as number | '',
     image: null as File | null,
@@ -88,6 +91,7 @@ function submitCreate() {
 const editForm = useForm({
     name: '',
     ip_address: '',
+    rtsp_url: '',
     status: 'active' as Camera['status'],
     location_id: '' as number | '',
     image: null as File | null,
@@ -97,6 +101,7 @@ function openEdit(camera: Camera) {
     targetCamera.value = camera;
     editForm.name = camera.name;
     editForm.ip_address = camera.ip_address;
+    editForm.rtsp_url = camera.rtsp_url ?? '';
     editForm.status = camera.status;
     editForm.location_id = camera.location_id ?? '';
     editForm.image = null;
@@ -137,6 +142,33 @@ return;
             showDeleteDialog.value = false;
         },
     });
+}
+
+// ─── Preview ──────────────────────────────────────────────────────────────────
+
+const previewStreamUrl = ref<string>('');
+const previewLoading = ref(false);
+
+async function openPreview(camera: Camera) {
+    targetCamera.value = camera;
+    previewStreamUrl.value = '';
+    previewLoading.value = true;
+    showPreviewDialog.value = true;
+
+    try {
+        const response = await fetch(`/camera/${camera.id}/stream`);
+
+        if (!response.ok) {
+throw new Error('Failed to fetch stream info');
+}
+
+        const data = await response.json();
+        previewStreamUrl.value = data.proxy_url ?? data.rtsp_url ?? '';
+    } catch {
+        previewStreamUrl.value = camera.rtsp_url ?? '';
+    } finally {
+        previewLoading.value = false;
+    }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -193,6 +225,20 @@ const columns: ColumnDef<Camera>[] = [
         cell: ({ row }) => h('span', { class: 'font-mono text-sm' }, row.original.ip_address),
     },
     {
+        accessorKey: 'rtsp_url',
+        enableSorting: false,
+        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'RTSP URL' }),
+        cell: ({ row }) =>
+            row.original.rtsp_url
+                ? h('a', {
+                      class: 'font-mono text-sm text-blue-600 underline',
+                      href: row.original.rtsp_url,
+                      target: '_blank',
+                      title: row.original.rtsp_url,
+                  }, row.original.rtsp_url)
+                : h('span', { class: 'text-muted-foreground' }, '—'),
+    },
+    {
         id: 'location',
         header: 'Location',
         cell: ({ row }) =>
@@ -215,6 +261,7 @@ const columns: ColumnDef<Camera>[] = [
         cell: ({ row }) =>
             h(CameraActions, {
                 camera: row.original,
+                onPreview: (camera: Camera) => openPreview(camera),
                 onEdit: (camera: Camera) => openEdit(camera),
                 onDelete: (camera: Camera) => openDelete(camera),
             }),
@@ -300,6 +347,12 @@ const columns: ColumnDef<Camera>[] = [
                 </div>
 
                 <div class="grid gap-1.5">
+                    <Label for="c-rtsp">RTSP URL</Label>
+                    <Input id="c-rtsp" v-model="createForm.rtsp_url" placeholder="rtsp://192.168.1.100:554/stream" />
+                    <InputError :message="createForm.errors.rtsp_url" />
+                </div>
+
+                <div class="grid gap-1.5">
                     <Label for="c-location">Location <span class="text-destructive">*</span></Label>
                     <Select v-model="createForm.location_id">
                         <SelectTrigger id="c-location" class="w-full">
@@ -379,6 +432,12 @@ const columns: ColumnDef<Camera>[] = [
                 </div>
 
                 <div class="grid gap-1.5">
+                    <Label for="e-rtsp">RTSP URL</Label>
+                    <Input id="e-rtsp" v-model="editForm.rtsp_url" placeholder="rtsp://192.168.1.100:554/stream" />
+                    <InputError :message="editForm.errors.rtsp_url" />
+                </div>
+
+                <div class="grid gap-1.5">
                     <Label for="e-location">Location <span class="text-destructive">*</span></Label>
                     <Select v-model="editForm.location_id">
                         <SelectTrigger id="e-location" class="w-full">
@@ -443,6 +502,31 @@ const columns: ColumnDef<Camera>[] = [
         </DialogContent>
     </Dialog>
 
+    <!-- ── Preview Dialog ───────────────────────────────────────────────────── -->
+    <Dialog v-model:open="showPreviewDialog">
+        <DialogContent class="sm:max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Preview — {{ targetCamera?.name }}</DialogTitle>
+                <DialogDescription>
+                    Streaming from <span class="font-mono text-sm">{{ targetCamera?.rtsp_url }}</span>
+                </DialogDescription>
+            </DialogHeader>
+
+            <div v-if="previewLoading" class="flex aspect-video w-full items-center justify-center rounded-lg bg-black">
+                <Spinner class="size-8 text-white" />
+            </div>
+            <RtspPreview
+                v-else-if="previewStreamUrl"
+                :stream-url="previewStreamUrl"
+                :camera-name="targetCamera?.name ?? ''"
+            />
+
+            <DialogFooter>
+                <Button variant="outline" @click="showPreviewDialog = false">Close</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
     <!-- ── Delete Confirmation Dialog ────────────────────────────────────── -->
     <Dialog v-model:open="showDeleteDialog">
         <DialogContent class="sm:max-w-sm">
@@ -463,78 +547,3 @@ const columns: ColumnDef<Camera>[] = [
         </DialogContent>
     </Dialog>
 </template>
-
-
-type Location = {
-    id: number;
-    name: string;
-};
-
-type Camera = {
-    id: number;
-    name: string;
-    ip_address: string;
-    status: string;
-    image?: string | null;
-    location?: Location | null;
-};
-
-type PaginationLink = {
-    url: string | null;
-    label: string;
-    active: boolean;
-};
-
-type PaginatedCameras = {
-    data: Camera[];
-    links?: PaginationLink[];
-};
-
-const props = withDefaults(
-    defineProps<{
-        cameras?: PaginatedCameras;
-        locations?: Location[];
-        filters?: {
-            search?: string;
-        };
-    }>(),
-    {
-        cameras: () => ({
-            data: [],
-            links: [],
-        }),
-        locations: () => [],
-        filters: () => ({
-            search: '',
-        }),
-    },
-);
-
-const search = ref(props.filters.search ?? '');
-const showCreate = ref(false);
-
-const form = useForm({
-    name: '',
-    ip_address: '',
-    status: 'active',
-    location_id: '',
-    image: null as File | null,
-});
-
-function setImage(event: Event) {
-    form.image = (event.target as HTMLInputElement).files?.[0] ?? null;
-}
-
-function submitCreate() {
-    form.post('/camera', {
-        forceFormData: true,
-        preserveScroll: true,
-        onSuccess: () => {
-            showCreate.value = false;
-            form.reset();
-            form.status = 'active';
-        },
-    });
-}
-
-

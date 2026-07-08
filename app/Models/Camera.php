@@ -16,6 +16,7 @@ class Camera extends Model
     protected $fillable = [
         'name',
         'ip_address',
+        'rtsp_url',
         'status',
         'location_id',
         'image',

@@ -7,6 +7,7 @@ export type Camera = {
     id: number;
     name: string;
     ip_address: string;
+    rtsp_url: string | null;
     status: CameraStatus;
     image: string | null;
     image_url: string | null;
