@@ -14,7 +14,9 @@ use Tests\TestCase;
 class ItemServiceMockTest extends TestCase
 {
     private ItemRepositoryInterface $itemRepository;
+
     private FileService $fileService;
+
     private ItemService $service;
 
     protected function setUp(): void
@@ -93,7 +95,7 @@ class ItemServiceMockTest extends TestCase
         string $description,
         bool $isActive
     ): Item {
-        return (new Item())->forceFill([
+        return (new Item)->forceFill([
             'id' => $id,
             'name' => $name,
             'code' => $code,
