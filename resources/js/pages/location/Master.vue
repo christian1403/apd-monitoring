@@ -316,7 +316,7 @@ const columns: ColumnDef<Location>[] = [
 
     <!-- Create Dialog -->
     <Dialog v-model:open="showCreateDialog">
-        <DialogContent class="sm:max-w-xl flex max-h-[80vh] flex-col">
+        <DialogContent class="sm:max-w-2xl flex max-h-[80vh] flex-col">
             <DialogHeader>
                 <DialogTitle>Add Location</DialogTitle>
 
@@ -325,7 +325,7 @@ const columns: ColumnDef<Location>[] = [
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div class="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto px-0.5">
                 <form id="create-location-form" class="flex flex-1 flex-col gap-4" @submit.prevent="submitCreate">
                     <div class="grid gap-1.5">
                         <Label>Name</Label>
@@ -344,7 +344,7 @@ const columns: ColumnDef<Location>[] = [
                         <textarea
                             v-model="createForm.description"
                             rows="3"
-                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         />
 
                         <InputError :message="createForm.errors.description" />
@@ -433,7 +433,7 @@ const columns: ColumnDef<Location>[] = [
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div class="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto px-0.5">
                 <form id="edit-location-form" class="flex flex-1 flex-col gap-4" @submit.prevent="submitEdit">
                     <div class="grid gap-1.5">
                         <Label>Name</Label>
@@ -449,7 +449,7 @@ const columns: ColumnDef<Location>[] = [
                         <textarea
                             v-model="editForm.description"
                             rows="3"
-                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         />
 
                         <InputError :message="editForm.errors.description" />
