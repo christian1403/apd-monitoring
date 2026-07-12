@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'parse.json.fields' => ParseJsonFields::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: ['api/camera/*/zone/config']);
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [

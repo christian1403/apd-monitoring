@@ -13,4 +13,5 @@ Route::middleware(['auth', 'verified'])
         Route::delete('/{camera}', [CameraController::class, 'destroy'])->name('destroy');
         Route::get('/export/{format}', [CameraController::class, 'export'])->name('export');
         Route::get('/{camera}/stream', [CameraController::class, 'stream'])->name('stream');
+        Route::get('/{camera}/zone', [CameraController::class, 'zone'])->name('camera.zone');
     });

@@ -16,3 +16,9 @@ require __DIR__.'/fileManager.php';
 require __DIR__.'/location.php';
 require __DIR__.'/camera.php';
 require __DIR__.'/detection.php';
+
+// Zone config routes (authenticated via web/session)
+Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
+    Route::get('camera/{camera}/zone/config', [\App\Http\Controllers\Api\ZoneConfigController::class, 'show'])->name('api.zone.config.show');
+    Route::post('camera/{camera}/zone/config', [\App\Http\Controllers\Api\ZoneConfigController::class, 'store'])->name('api.zone.config.store');
+});

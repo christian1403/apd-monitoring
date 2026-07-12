@@ -140,4 +140,11 @@ class CameraController extends Controller
             'proxy_url' => $proxyUrl,
         ]);
     }
+
+    public function zone(Camera $camera): Response
+    {
+        return Inertia::render('camera/Zone', [
+            'camera' => $camera->load('location'),
+        ]);
+    }
 }

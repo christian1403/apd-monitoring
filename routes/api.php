@@ -16,3 +16,5 @@ Route::prefix('v1')->middleware([VerifyHmacSignature::class, ParseJsonFields::cl
     Route::post('detection/violation', [DetectionController::class, 'store'])
         ->name('api.detection.violation');
 });
+
+// Zone config routes are in web.php (session-based auth)

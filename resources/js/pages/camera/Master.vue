@@ -110,8 +110,8 @@ function openEdit(camera: Camera) {
 
 function submitEdit() {
     if (!targetCamera.value) {
-return;
-}
+        return;
+    }
 
     editForm.put(CameraController.update.url(targetCamera.value.id), {
         forceFormData: true,
@@ -132,8 +132,8 @@ function openDelete(camera: Camera) {
 
 function confirmDelete() {
     if (!targetCamera.value) {
-return;
-}
+        return;
+    }
 
     deleting.value = true;
     router.delete(CameraController.destroy.url(targetCamera.value.id), {
@@ -159,8 +159,8 @@ async function openPreview(camera: Camera) {
         const response = await fetch(`/camera/${camera.id}/stream`);
 
         if (!response.ok) {
-throw new Error('Failed to fetch stream info');
-}
+            throw new Error('Failed to fetch stream info');
+        }
 
         const data = await response.json();
         previewStreamUrl.value = data.proxy_url ?? data.rtsp_url ?? '';
@@ -171,6 +171,10 @@ throw new Error('Failed to fetch stream info');
     }
 }
 
+function openZone(camera: Camera) {
+    router.visit(`/camera/${camera.id}/zone`);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function onFileChange(form: typeof createForm | typeof editForm, e: Event) {
@@ -179,12 +183,18 @@ function onFileChange(form: typeof createForm | typeof editForm, e: Event) {
 
 // ─── DataTable filter handler ─────────────────────────────────────────────────
 
-function handleFilterChange(updates: Partial<CameraFilters & { page: number }>) {
-    router.get(index(), { ...props.filters, ...updates }, {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-    });
+function handleFilterChange(
+    updates: Partial<CameraFilters & { page: number }>,
+) {
+    router.get(
+        index(),
+        { ...props.filters, ...updates },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
 }
 
 function handleStatusChange(value: AcceptableValue) {
@@ -193,7 +203,10 @@ function handleStatusChange(value: AcceptableValue) {
 
 // ─── Status badge variant ─────────────────────────────────────────────────────
 
-const statusVariant: Record<Camera['status'], 'default' | 'secondary' | 'outline'> = {
+const statusVariant: Record<
+    Camera['status'],
+    'default' | 'secondary' | 'outline'
+> = {
     active: 'default',
     inactive: 'secondary',
     maintenance: 'outline',
@@ -215,44 +228,60 @@ const columns: ColumnDef<Camera>[] = [
     {
         accessorKey: 'name',
         enableSorting: true,
-        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Name' }),
-        cell: ({ row }) => h('span', { class: 'font-medium' }, row.original.name),
+        header: ({ column }) =>
+            h(DataTableColumnHeader, { column, title: 'Name' }),
+        cell: ({ row }) =>
+            h('span', { class: 'font-medium' }, row.original.name),
     },
     {
         accessorKey: 'ip_address',
         enableSorting: true,
-        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'IP Address' }),
-        cell: ({ row }) => h('span', { class: 'font-mono text-sm' }, row.original.ip_address),
+        header: ({ column }) =>
+            h(DataTableColumnHeader, { column, title: 'IP Address' }),
+        cell: ({ row }) =>
+            h('span', { class: 'font-mono text-sm' }, row.original.ip_address),
     },
     {
         accessorKey: 'rtsp_url',
         enableSorting: false,
-        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'RTSP URL' }),
+        header: ({ column }) =>
+            h(DataTableColumnHeader, { column, title: 'RTSP URL' }),
         cell: ({ row }) =>
             row.original.rtsp_url
-                ? h('a', {
-                      class: 'font-mono text-sm text-blue-600 underline',
-                      href: row.original.rtsp_url,
-                      target: '_blank',
-                      title: row.original.rtsp_url,
-                  }, row.original.rtsp_url)
+                ? h(
+                      'a',
+                      {
+                          class: 'font-mono text-sm text-blue-600 underline',
+                          href: row.original.rtsp_url,
+                          target: '_blank',
+                          title: row.original.rtsp_url,
+                      },
+                      row.original.rtsp_url,
+                  )
                 : h('span', { class: 'text-muted-foreground' }, '—'),
     },
     {
         id: 'location',
         header: 'Location',
         cell: ({ row }) =>
-            h('span', { class: 'text-muted-foreground' }, row.original.location?.name ?? '—'),
+            h(
+                'span',
+                { class: 'text-muted-foreground' },
+                row.original.location?.name ?? '—',
+            ),
     },
     {
         accessorKey: 'status',
         enableSorting: true,
-        header: ({ column }) => h(DataTableColumnHeader, { column, title: 'Status' }),
+        header: ({ column }) =>
+            h(DataTableColumnHeader, { column, title: 'Status' }),
         cell: ({ row }) =>
             h(
                 Badge,
                 { variant: statusVariant[row.original.status] },
-                () => row.original.status.charAt(0).toUpperCase() + row.original.status.slice(1),
+                () =>
+                    row.original.status.charAt(0).toUpperCase() +
+                    row.original.status.slice(1),
             ),
     },
     {
@@ -263,6 +292,7 @@ const columns: ColumnDef<Camera>[] = [
                 camera: row.original,
                 onPreview: (camera: Camera) => openPreview(camera),
                 onEdit: (camera: Camera) => openEdit(camera),
+                onZone: (camera: Camera) => openZone(camera),
                 onDelete: (camera: Camera) => openDelete(camera),
             }),
     },
@@ -277,7 +307,9 @@ const columns: ColumnDef<Camera>[] = [
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight">Camera</h1>
-                <p class="text-sm text-muted-foreground">Manage cameras by location</p>
+                <p class="text-sm text-muted-foreground">
+                    Manage cameras by location
+                </p>
             </div>
             <Button @click="openCreate">
                 <Plus />
@@ -291,13 +323,22 @@ const columns: ColumnDef<Camera>[] = [
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="flex items-center gap-2">
                         <Label class="text-sm font-medium">Status</Label>
-                        <Select v-model="filters.status" @update:model-value="handleStatusChange">
+                        <Select
+                            v-model="filters.status"
+                            @update:model-value="handleStatusChange"
+                        >
                             <SelectTrigger class="w-40">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All</SelectItem>
-                                <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
+                                <SelectItem
+                                    v-for="status in statuses"
+                                    :value="status"
+                                    >{{
+                                        capitalizeFirstLetter(status)
+                                    }}</SelectItem
+                                >
                             </SelectContent>
                         </Select>
                     </div>
@@ -330,30 +371,53 @@ const columns: ColumnDef<Camera>[] = [
         <DialogContent class="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Add Camera</DialogTitle>
-                <DialogDescription>Fill in the details to add a new camera.</DialogDescription>
+                <DialogDescription
+                    >Fill in the details to add a new camera.</DialogDescription
+                >
             </DialogHeader>
 
             <form class="space-y-4" @submit.prevent="submitCreate">
                 <div class="grid gap-1.5">
-                    <Label for="c-name">Name <span class="text-destructive">*</span></Label>
-                    <Input id="c-name" v-model="createForm.name" placeholder="Camera name" required />
+                    <Label for="c-name"
+                        >Name <span class="text-destructive">*</span></Label
+                    >
+                    <Input
+                        id="c-name"
+                        v-model="createForm.name"
+                        placeholder="Camera name"
+                        required
+                    />
                     <InputError :message="createForm.errors.name" />
                 </div>
 
                 <div class="grid gap-1.5">
-                    <Label for="c-ip">IP Address <span class="text-destructive">*</span></Label>
-                    <Input id="c-ip" v-model="createForm.ip_address" placeholder="192.168.1.100" required />
+                    <Label for="c-ip"
+                        >IP Address
+                        <span class="text-destructive">*</span></Label
+                    >
+                    <Input
+                        id="c-ip"
+                        v-model="createForm.ip_address"
+                        placeholder="192.168.1.100"
+                        required
+                    />
                     <InputError :message="createForm.errors.ip_address" />
                 </div>
 
                 <div class="grid gap-1.5">
                     <Label for="c-rtsp">RTSP URL</Label>
-                    <Input id="c-rtsp" v-model="createForm.rtsp_url" placeholder="rtsp://192.168.1.100:554/stream" />
+                    <Input
+                        id="c-rtsp"
+                        v-model="createForm.rtsp_url"
+                        placeholder="rtsp://192.168.1.100:554/stream"
+                    />
                     <InputError :message="createForm.errors.rtsp_url" />
                 </div>
 
                 <div class="grid gap-1.5">
-                    <Label for="c-location">Location <span class="text-destructive">*</span></Label>
+                    <Label for="c-location"
+                        >Location <span class="text-destructive">*</span></Label
+                    >
                     <Select v-model="createForm.location_id">
                         <SelectTrigger id="c-location" class="w-full">
                             <SelectValue placeholder="Select location" />
@@ -372,13 +436,19 @@ const columns: ColumnDef<Camera>[] = [
                 </div>
 
                 <div class="grid gap-1.5">
-                    <Label for="c-status">Status <span class="text-destructive">*</span></Label>
+                    <Label for="c-status"
+                        >Status <span class="text-destructive">*</span></Label
+                    >
                     <Select v-model="createForm.status">
                         <SelectTrigger id="c-status" class="w-full">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
+                            <SelectItem
+                                v-for="status in statuses"
+                                :value="status"
+                                >{{ capitalizeFirstLetter(status) }}</SelectItem
+                            >
                         </SelectContent>
                     </Select>
                     <InputError :message="createForm.errors.status" />
@@ -396,7 +466,11 @@ const columns: ColumnDef<Camera>[] = [
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="outline" @click="showCreateDialog = false">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="showCreateDialog = false"
+                    >
                         Cancel
                     </Button>
                     <Button type="submit" :disabled="createForm.processing">
@@ -414,31 +488,53 @@ const columns: ColumnDef<Camera>[] = [
             <DialogHeader>
                 <DialogTitle>Edit Camera</DialogTitle>
                 <DialogDescription>
-                    Updating <strong>{{ targetCamera?.name }}</strong>.
+                    Updating <strong>{{ targetCamera?.name }}</strong
+                    >.
                 </DialogDescription>
             </DialogHeader>
 
             <form class="space-y-4" @submit.prevent="submitEdit">
                 <div class="grid gap-1.5">
-                    <Label for="e-name">Name <span class="text-destructive">*</span></Label>
-                    <Input id="e-name" v-model="editForm.name" placeholder="Camera name" required />
+                    <Label for="e-name"
+                        >Name <span class="text-destructive">*</span></Label
+                    >
+                    <Input
+                        id="e-name"
+                        v-model="editForm.name"
+                        placeholder="Camera name"
+                        required
+                    />
                     <InputError :message="editForm.errors.name" />
                 </div>
 
                 <div class="grid gap-1.5">
-                    <Label for="e-ip">IP Address <span class="text-destructive">*</span></Label>
-                    <Input id="e-ip" v-model="editForm.ip_address" placeholder="192.168.1.100" required />
+                    <Label for="e-ip"
+                        >IP Address
+                        <span class="text-destructive">*</span></Label
+                    >
+                    <Input
+                        id="e-ip"
+                        v-model="editForm.ip_address"
+                        placeholder="192.168.1.100"
+                        required
+                    />
                     <InputError :message="editForm.errors.ip_address" />
                 </div>
 
                 <div class="grid gap-1.5">
                     <Label for="e-rtsp">RTSP URL</Label>
-                    <Input id="e-rtsp" v-model="editForm.rtsp_url" placeholder="rtsp://192.168.1.100:554/stream" />
+                    <Input
+                        id="e-rtsp"
+                        v-model="editForm.rtsp_url"
+                        placeholder="rtsp://192.168.1.100:554/stream"
+                    />
                     <InputError :message="editForm.errors.rtsp_url" />
                 </div>
 
                 <div class="grid gap-1.5">
-                    <Label for="e-location">Location <span class="text-destructive">*</span></Label>
+                    <Label for="e-location"
+                        >Location <span class="text-destructive">*</span></Label
+                    >
                     <Select v-model="editForm.location_id">
                         <SelectTrigger id="e-location" class="w-full">
                             <SelectValue placeholder="Select location" />
@@ -457,13 +553,19 @@ const columns: ColumnDef<Camera>[] = [
                 </div>
 
                 <div class="grid gap-1.5">
-                    <Label for="e-status">Status <span class="text-destructive">*</span></Label>
+                    <Label for="e-status"
+                        >Status <span class="text-destructive">*</span></Label
+                    >
                     <Select v-model="editForm.status">
                         <SelectTrigger id="e-status" class="w-full">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem v-for="status in statuses" :value="status">{{ capitalizeFirstLetter(status) }}</SelectItem>
+                            <SelectItem
+                                v-for="status in statuses"
+                                :value="status"
+                                >{{ capitalizeFirstLetter(status) }}</SelectItem
+                            >
                         </SelectContent>
                     </Select>
                     <InputError :message="editForm.errors.status" />
@@ -477,7 +579,10 @@ const columns: ColumnDef<Camera>[] = [
                         :alt="targetCamera.name"
                         :title="targetCamera.name"
                     />
-                    <p v-if="targetCamera?.image" class="text-xs text-muted-foreground">
+                    <p
+                        v-if="targetCamera?.image"
+                        class="text-xs text-muted-foreground"
+                    >
                         A new upload will replace the existing image.
                     </p>
                     <Input
@@ -490,7 +595,11 @@ const columns: ColumnDef<Camera>[] = [
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="outline" @click="showEditDialog = false">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="showEditDialog = false"
+                    >
                         Cancel
                     </Button>
                     <Button type="submit" :disabled="editForm.processing">
@@ -508,11 +617,17 @@ const columns: ColumnDef<Camera>[] = [
             <DialogHeader>
                 <DialogTitle>Preview — {{ targetCamera?.name }}</DialogTitle>
                 <DialogDescription>
-                    Streaming from <span class="font-mono text-sm">{{ targetCamera?.rtsp_url }}</span>
+                    Streaming from
+                    <span class="font-mono text-sm">{{
+                        targetCamera?.rtsp_url
+                    }}</span>
                 </DialogDescription>
             </DialogHeader>
 
-            <div v-if="previewLoading" class="flex aspect-video w-full items-center justify-center rounded-lg bg-black">
+            <div
+                v-if="previewLoading"
+                class="flex aspect-video w-full items-center justify-center rounded-lg bg-black"
+            >
                 <Spinner class="size-8 text-white" />
             </div>
             <RtspPreview
@@ -522,7 +637,9 @@ const columns: ColumnDef<Camera>[] = [
             />
 
             <DialogFooter>
-                <Button variant="outline" @click="showPreviewDialog = false">Close</Button>
+                <Button variant="outline" @click="showPreviewDialog = false"
+                    >Close</Button
+                >
             </DialogFooter>
         </DialogContent>
     </Dialog>
@@ -534,12 +651,19 @@ const columns: ColumnDef<Camera>[] = [
                 <DialogTitle>Delete Camera</DialogTitle>
                 <DialogDescription>
                     Are you sure you want to delete
-                    <strong>{{ targetCamera?.name }}</strong>? This action cannot be undone.
+                    <strong>{{ targetCamera?.name }}</strong
+                    >? This action cannot be undone.
                 </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-                <Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
-                <Button variant="destructive" :disabled="deleting" @click="confirmDelete">
+                <Button variant="outline" @click="showDeleteDialog = false"
+                    >Cancel</Button
+                >
+                <Button
+                    variant="destructive"
+                    :disabled="deleting"
+                    @click="confirmDelete"
+                >
                     <Spinner v-if="deleting" class="size-4" />
                     Delete
                 </Button>
